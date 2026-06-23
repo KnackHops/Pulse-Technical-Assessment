@@ -116,6 +116,12 @@ body {
   pointer-events: none;
 }
 
+/* While we're mid-connection, dots stay clickable (to surface a "finish your
+   current connection first" notice) but shouldn't invite it. */
+.pulse-map-locked .pulse-dot {
+  cursor: default;
+}
+
 @keyframes dot-in {
   from {
     transform: scale(0);

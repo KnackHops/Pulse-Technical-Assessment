@@ -7,6 +7,7 @@ import type { PeerDot } from "@/lib/types";
 import { useTheme } from "./ThemeProvider";
 import OnlineCounter from "./OnlineCounter";
 import { MAP_STYLE } from "@/lib/mapStyle";
+import { dotHue, hueCss } from "@/lib/hue";
 
 const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "pk.eyJ1IjoicHVsc2UtbWFwIiwiYSI6ImNrMDBkZW1vMDAwMDAwMDAifQ.AAAAAAAAAAAAAAAAAAAAAA";
 
@@ -15,15 +16,6 @@ const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "pk.eyJ1IjoicHVsc2UtbWFwIi
 // "Me" or another peer.
 const COLLISION_PX = 30;
 const SPREAD_PX = 30;
-
-// Deterministic per-id hue (0–359) — drives the dot fill, glow, and pulse ring.
-function dotHue(id: string): number {
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) {
-    hash = (hash * 31 + id.charCodeAt(i)) | 0;
-  }
-  return Math.abs(hash) % 360;
-}
 
 export default function WorldMap({
   peers,
@@ -45,13 +37,13 @@ export default function WorldMap({
   const [ready, setReady] = useState(false);
   const { theme } = useTheme();
 
-  // Marker click handlers are bound once, so read the live click handler +
-  // connectability through refs (synced in an effect, never during render).
+  // Marker click handlers are bound once, so read the live click handler
+  // through a ref (synced in an effect, never during render). Clicks always
+  // fire — the page decides what to do (request, or a "busy/already connected"
+  // notice); `canConnect` only drives the cursor below.
   const onPeerClickRef = useRef(onPeerClick);
-  const canConnectRef = useRef(canConnect);
   useEffect(() => {
     onPeerClickRef.current = onPeerClick;
-    canConnectRef.current = canConnect;
   });
 
   // Fan out markers that overlap on screen so a peer never hides (and stays
@@ -201,12 +193,11 @@ export default function WorldMap({
         if (!marker) {
           const el = document.createElement("button");
           el.className = "pulse-dot";
-          const hue = dotHue(peer.id);
-          el.style.setProperty("--dot-hue", String(hue));
-          el.style.background = `hsl(${hue} 70% 60%)`;
+          el.style.setProperty("--dot-hue", String(dotHue(peer.id)));
+          el.style.background = hueCss(peer.id);
           el.addEventListener("click", (e) => {
             e.stopPropagation();
-            if (canConnectRef.current) onPeerClickRef.current(peer.id);
+            onPeerClickRef.current(peer.id);
           });
           marker = new mapboxgl.Marker({ element: el })
             .setLngLat([peer.lng, peer.lat])
@@ -276,7 +267,10 @@ export default function WorldMap({
 
   return (
     <div className="absolute inset-0">
-      <div ref={containerRef} className="h-full w-full bg-surface-2" />
+      <div
+        ref={containerRef}
+        className={`h-full w-full bg-surface-2 ${canConnect ? "" : "pulse-map-locked"}`}
+      />
 
       {!TOKEN && (
         <div className="absolute inset-0 flex items-center justify-center p-6 text-center">

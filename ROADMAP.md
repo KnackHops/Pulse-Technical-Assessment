@@ -83,7 +83,12 @@ with a persisted toggle. Setup (user): `npm install motion`.
   - [x] 2.3d Online-counter — shared `OnlineCounter` pill that flashes emerald on count change;
     map counter moved top-right (was hidden behind the Mapbox logo); live "N online" on the gate
     too (pre-join count via `poll`, no presence row created).
-- [ ] 2.4 Connection flow (animated modal + toasts)
+- [x] **2.4 Connection flow** — shared `lib/hue.ts` (`dotHue`/`hueCss`) so cards match the
+  on-map dot; floating `RequestingCard` with the peer's hue dot + intro and a 30s countdown
+  ring (visual; real timeout unchanged); `Toast` gains `info`/`success`/`danger` variants
+  (declined/disconnected/failed/camera → danger, "Connected" flash → success); clicking a
+  busy/locked dot (or one while mid-connection) now explains itself via a toast instead of
+  doing nothing; gate errors routed through the same danger `Toast`.
 - [ ] 2.5 Chat panel polish
 - [ ] 2.6 Video panel polish (control bar, mic/cam toggles, end-call, chat-during-video)
 - [ ] 2.7 Responsive + a11y pass (reduced-motion, focus-visible)

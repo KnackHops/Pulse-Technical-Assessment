@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence } from "motion/react";
-import Toast from "./components/ui/Toast";
+import Toast, { type ToastVariant } from "./components/ui/Toast";
 import EntryGate from "./components/EntryGate";
 import WorldMap from "./components/WorldMap";
 import ConnectionPrompt from "./components/ConnectionPrompt";
+import RequestingCard from "./components/RequestingCard";
 import ChatPanel, { type ChatMessage } from "./components/ChatPanel";
 import VideoPanel from "./components/VideoPanel";
 import { join, leave, poll, sendSignal } from "@/lib/api";
@@ -30,7 +31,9 @@ export default function Home() {
   const [peers, setPeers] = useState<PeerDot[]>([]);
   const [gateCount, setGateCount] = useState(0);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ text: string; variant: ToastVariant } | null>(
+    null,
+  );
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [myLocation, setMyLocation] = useState<{ lat: number; lng: number } | null>(
@@ -55,8 +58,8 @@ export default function Home() {
   const msgId = useRef(0);
   const requestTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  function showNotice(text: string) {
-    setNotice(text);
+  function showNotice(text: string, variant: ToastVariant = "info") {
+    setNotice({ text, variant });
     window.setTimeout(() => setNotice(null), 3500);
   }
 
@@ -64,7 +67,7 @@ export default function Home() {
     setMessages((prev) => [...prev, { id: msgId.current++, mine, text }]);
   }
 
-  function teardown(message?: string) {
+  function teardown(message?: string, variant: ToastVariant = "info") {
     if (requestTimer.current) clearTimeout(requestTimer.current);
     peerRef.current?.close();
     peerRef.current = null;
@@ -73,7 +76,7 @@ export default function Home() {
     setVideo("none");
     setMessages([]);
     setConn({ kind: "idle" });
-    if (message) showNotice(message);
+    if (message) showNotice(message, variant);
   }
 
   function startPeer(peerId: string, initiator: boolean) {
@@ -93,11 +96,12 @@ export default function Home() {
           ) {
             void sendSignal(sessionId, peerId, "end");
           }
-          teardown("Connection failed (network).");
+          teardown("Connection failed (network).", "danger");
         }
       },
       onChannelOpen: () => {
         setConn({ kind: "connected", peerId });
+        showNotice("Connected", "success");
       },
     });
     peerRef.current = ps;
@@ -119,7 +123,7 @@ export default function Home() {
             .catch(() => {
               setVideo("none");
               ps.sendControl("video-end");
-              showNotice("Camera unavailable.");
+              showNotice("Camera unavailable.", "danger");
             });
         }
         break;
@@ -139,7 +143,14 @@ export default function Home() {
   }
 
   function requestConnection(peerId: string) {
-    if (connRef.current.kind !== "idle") return;
+    if (connRef.current.kind !== "idle") {
+      showNotice("Finish your current connection first.", "info");
+      return;
+    }
+    if (peers.find((p) => p.id === peerId)?.busy) {
+      showNotice("They're already connected.", "info");
+      return;
+    }
     setConn({ kind: "requesting", peerId });
     void sendSignal(sessionId, peerId, "request");
     requestTimer.current = setTimeout(() => {
@@ -200,7 +211,7 @@ export default function Home() {
       .catch(() => {
         ps.sendControl("video-decline");
         setVideo("none");
-        showNotice("Camera unavailable.");
+        showNotice("Camera unavailable.", "danger");
       });
   }
 
@@ -384,25 +395,27 @@ export default function Home() {
       />
 
       <AnimatePresence>
-        {notice && <Toast key={notice} message={notice} />}
+        {notice && (
+          <Toast key={notice.text} message={notice.text} variant={notice.variant} />
+        )}
       </AnimatePresence>
 
-      {conn.kind === "requesting" && (
-        <div className="absolute left-1/2 top-20 z-30 flex -translate-x-1/2 items-center gap-3 rounded-full border border-border bg-surface/90 px-4 py-2 text-sm text-foreground shadow-lg backdrop-blur">
-          <span>Requesting connection…</span>
-          <button
-            onClick={cancelRequest}
-            className="rounded-full bg-surface-2 px-3 py-1 text-xs hover:opacity-90"
-          >
-            Cancel
-          </button>
-        </div>
-      )}
+      <AnimatePresence>
+        {conn.kind === "requesting" && (
+          <RequestingCard
+            peerId={conn.peerId}
+            intro={peers.find((p) => p.id === conn.peerId)?.intro ?? null}
+            timeoutMs={REQUEST_TIMEOUT_MS}
+            onCancel={cancelRequest}
+          />
+        )}
+      </AnimatePresence>
 
       <ConnectionPrompt
         open={conn.kind === "incoming"}
         title="A stranger wants to connect"
         subtitle={incomingIntro ? `“${incomingIntro}”` : undefined}
+        dotId={conn.kind === "incoming" ? conn.peerId : undefined}
         acceptLabel="Accept"
         declineLabel="Decline"
         onAccept={acceptIncoming}

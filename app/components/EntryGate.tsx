@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import Button from "./ui/Button";
+import Toast from "./ui/Toast";
 import GateGlobe from "./GateGlobe";
 import GateGrid from "./GateGrid";
 import OnlineCounter from "./OnlineCounter";
@@ -43,6 +44,15 @@ export default function EntryGate({
       if (saved) setIntro(saved);
     } catch {}
   }, []);
+
+  // Auto-dismiss the error toast after 5s (mirrors the map's showNotice). Reset
+  // to "idle" — the gate's default — so only the toast hides; a retry clears it
+  // sooner by flipping status to "locating", which also cancels this timer.
+  useEffect(() => {
+    if (status !== "error") return;
+    const t = setTimeout(() => setStatus("idle"), 5000);
+    return () => clearTimeout(t);
+  }, [status]);
 
   function updateIntro(value: string) {
     const next = value.slice(0, MAX_INTRO_LEN);
@@ -87,6 +97,12 @@ export default function EntryGate({
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-background text-foreground">
+      <AnimatePresence>
+        {status === "error" && error && (
+          <Toast key={error} message={error} variant="danger" />
+        )}
+      </AnimatePresence>
+
       {/* Animated green grid behind the globe. */}
       <GateGrid />
       <GateGlobe />
@@ -151,10 +167,6 @@ export default function EntryGate({
         <div className="mt-4">
           <OnlineCounter count={onlineCount} />
         </div>
-
-        {status === "error" && (
-          <p className="mt-4 text-sm text-danger">{error}</p>
-        )}
 
         <p className="mt-6 text-xs text-muted">
           No sign-up. Your dot is placed 1–3&nbsp;km from your real location.
