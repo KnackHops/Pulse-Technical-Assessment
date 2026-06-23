@@ -41,7 +41,7 @@ Three confirmed end-to-end breakers + hardening + a verification pass.
 Decisions: **motion lib = `motion` (framer-motion)** for enter/exit; **theme = light + dark**
 with a persisted toggle. Setup (user): `npm install motion`.
 
-- [ ] **2.1 Foundation**
+- [x] **2.1 Foundation**
   - [x] 2.1a Design tokens + theme — Tailwind v4 `@theme` in `globals.css`: accent/surface/
     border/text tokens for **both** light & dark; radius, shadow, glow. Components reference
     tokens, not raw `zinc-*`.
@@ -59,17 +59,11 @@ with a persisted toggle. Setup (user): `npm install motion`.
   - [x] 2.1e Motion + primitives — wired `motion`; shared `Button`/`Modal`/`Toast` in
     `app/components/ui/`, adopted in ConnectionPrompt (animated modal), EntryGate, and the
     notice toast. `Panel` lands with the chat polish in 2.5.
-- [ ] **2.2 Entry gate + "introduce yourself"**
-  - [x] 2.2a Introduce-yourself (core feature) — optional short intro (≤60 chars, plain text,
-    ephemeral on the presence row, nothing persisted server-side). Captured on the gate +
-    `sessionStorage` (prefill, clears on tab close). Plumbing: `Presence.intro` (Prisma) →
-    `join(id,lat,lng,intro)` (trim/cap/validate in `/api/join`) → `poll` returns it →
-    `PeerDot.intro`. Shown on **peer-pin hover** (simple tooltip) **and** in the
-    incoming-connect prompt (mobile/touch + pre-accept safety context). Setup: `npx prisma
-    db push`.
-  - [x] 2.2b Gate visual redesign — auto-rotating Mapbox globe (`projection: 'globe'`,
-    reduced-motion aware) behind a frosted/translucent panel; emerald edge-pulse on input
-    focus / button click; styled intro input + locating state.
+- [x] **2.2 Entry gate redesign** — auto-rotating Mapbox globe (`projection: 'globe'`,
+  transparent space, reduced-motion aware) over an **animated green grid backdrop** (`GateGrid`
+  — masked bright copy of the grid sweeping like radar) + radial vignette; demo intro pins on
+  the globe; frosted panel **centered** (`grid place-items-center`); emerald edge-pulse on
+  input focus / button click. (Showcases the Phase 4 "introduce yourself" feature.)
 - [ ] 2.3 Map & dots (glow, busy state, animated join/leave; polished pin-declutter)
 - [ ] 2.4 Connection flow (animated modal + toasts)
 - [ ] 2.5 Chat panel polish
@@ -84,10 +78,18 @@ with a persisted toggle. Setup (user): `npm install motion`.
 - [ ] 3.3 (P1) Input hardening — reject `fromId === toId`, validate payload shape, cap peers
 - [ ] 3.4 (P2) Security headers / CORS / error hygiene
 
-## Phase 4 — Make it better (new feature) — *sketch, direction TBD*
+## Phase 4 — Make it better (new feature)
 
-- [ ] 4.x Direction TBD. Leading: global anonymized **connection ripples** (alive) +
-  lightweight **safety** affordance (block/disconnect). Finalize at phase start.
+Feature: **"Introduce yourself"** (moved here from Phase 2 — this is the graded new feature).
+
+- [x] **4.1 Introduce-yourself (core)** — optional short intro (≤60 chars, plain text,
+  ephemeral on the presence row, nothing persisted server-side). Captured on the gate +
+  `sessionStorage` (prefill, clears on tab close). Plumbing: `Presence.intro` (Prisma) →
+  `join(id,lat,lng,intro)` (trim/cap/validate in `/api/join`) → `poll` returns it →
+  `PeerDot.intro`. Shown on **peer-pin hover** **and** in the incoming-connect prompt
+  (mobile/touch + pre-accept safety context). Setup: `npx prisma db push`.
+- [ ] 4.2 Optional extensions (TBD) — richer hover card, edit intro while live, and/or a
+  lightweight **safety** affordance (block/disconnect); possible add: connection **ripples**.
 
 ---
 
