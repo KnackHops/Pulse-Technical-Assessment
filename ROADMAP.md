@@ -69,7 +69,7 @@ with a persisted toggle. Setup (user): `npm install motion`.
   — masked bright copy of the grid sweeping like radar) + radial vignette; demo intro pins on
   the globe; frosted panel **centered** (`grid place-items-center`); emerald edge-pulse on
   input focus / button click. (Showcases the Phase 4 "introduce yourself" feature.)
-- [ ] **2.3 Map & dots**
+- [x] **2.3 Map & dots**
   - [x] 2.3a Dot redesign — per-id **hue** drives the dot fill + matching glow + pulse ring
     (was a white ring); **"Me"** = a radar beacon (hue center + slow ping ring, replaces the 📍
     emoji); **busy** = dimmed + a crisp **white lock** (inline `<svg>`) with the pulse stopped;
@@ -80,7 +80,9 @@ with a persisted toggle. Setup (user): `npm install motion`.
   - [x] 2.3c Pin declutter — `declutter()` projects Me + peers to screen px, groups overlaps,
     fans grouped peers radially via `Marker.setOffset` (Me fixed), resets when they separate;
     recomputed on peer changes + zoom. Stacked peers stay visible + clickable.
-  - [ ] 2.3d Online-counter polish
+  - [x] 2.3d Online-counter — shared `OnlineCounter` pill that flashes emerald on count change;
+    map counter moved top-right (was hidden behind the Mapbox logo); live "N online" on the gate
+    too (pre-join count via `poll`, no presence row created).
 - [ ] 2.4 Connection flow (animated modal + toasts)
 - [ ] 2.5 Chat panel polish
 - [ ] 2.6 Video panel polish (control bar, mic/cam toggles, end-call, chat-during-video)

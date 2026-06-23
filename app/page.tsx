@@ -28,6 +28,7 @@ export default function Home() {
   const [phase, setPhase] = useState<"gate" | "live">("gate");
   const [sessionId] = useState(() => crypto.randomUUID());
   const [peers, setPeers] = useState<PeerDot[]>([]);
+  const [gateCount, setGateCount] = useState(0);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
@@ -328,6 +329,27 @@ export default function Home() {
     };
   }, [sessionId, phase]);
 
+  // Live online count while on the gate. poll() only reads/heartbeats (no
+  // upsert), so calling it here does NOT create a presence row — the user
+  // doesn't appear on the map until they actually join.
+  useEffect(() => {
+    if (phase !== "gate") return;
+    let active = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const tick = async () => {
+      try {
+        const data = await poll(sessionId);
+        if (active) setGateCount(data.peers.length);
+      } catch {}
+      if (active) timer = setTimeout(tick, POLL_INTERVAL_MS);
+    };
+    tick();
+    return () => {
+      active = false;
+      if (timer) clearTimeout(timer);
+    };
+  }, [phase, sessionId]);
+
   async function handleReady(lat: number, lng: number, intro: string) {
     // Only go live once the join actually succeeds. If it throws, let it
     // propagate to EntryGate (which shows the error and stays on the gate) —
@@ -339,7 +361,7 @@ export default function Home() {
   }
 
   if (phase === "gate") {
-    return <EntryGate onReady={handleReady} />;
+    return <EntryGate onReady={handleReady} onlineCount={gateCount} />;
   }
 
   const inChat = conn.kind === "connecting" || conn.kind === "connected";

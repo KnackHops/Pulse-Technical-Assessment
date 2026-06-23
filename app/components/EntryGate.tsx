@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import Button from "./ui/Button";
 import GateGlobe from "./GateGlobe";
 import GateGrid from "./GateGrid";
+import OnlineCounter from "./OnlineCounter";
 import { MAX_INTRO_LEN } from "@/lib/types";
 
 const INTRO_KEY = "pulse-intro";
@@ -17,12 +18,14 @@ const VIGNETTE: React.CSSProperties = {
 
 export default function EntryGate({
   onReady,
+  onlineCount,
 }: {
   onReady: (
     lat: number,
     lng: number,
     intro: string,
   ) => void | Promise<void>;
+  onlineCount: number;
 }) {
   const [status, setStatus] = useState<"idle" | "locating" | "error">("idle");
   const [error, setError] = useState<string>("");
@@ -144,6 +147,10 @@ export default function EntryGate({
         >
           {status === "locating" ? "Locating…" : "Enter Pulse"}
         </Button>
+
+        <div className="mt-4">
+          <OnlineCounter count={onlineCount} />
+        </div>
 
         {status === "error" && (
           <p className="mt-4 text-sm text-danger">{error}</p>

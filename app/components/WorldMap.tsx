@@ -5,6 +5,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import type { Map as MapboxMap, Marker } from "mapbox-gl";
 import type { PeerDot } from "@/lib/types";
 import { useTheme } from "./ThemeProvider";
+import OnlineCounter from "./OnlineCounter";
 import { MAP_STYLE } from "@/lib/mapStyle";
 
 const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "pk.eyJ1IjoicHVsc2UtbWFwIiwiYSI6ImNrMDBkZW1vMDAwMDAwMDAifQ.AAAAAAAAAAAAAAAAAAAAAA";
@@ -288,9 +289,7 @@ export default function WorldMap({
       )}
 
       {/* Online count */}
-      <div className="absolute bottom-4 left-4 rounded-full border border-border bg-surface/80 px-3 py-1.5 text-xs text-muted backdrop-blur">
-        {peers.length} online
-      </div>
+      <OnlineCounter count={peers.length} className="absolute right-4 top-4" />
     </div>
   );
 }
