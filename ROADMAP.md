@@ -22,7 +22,7 @@ Three confirmed end-to-end breakers + hardening + a verification pass.
 - [x] **1.1c — Fix presence reaping (poll heartbeat).** `app/api/poll/route.ts` heartbeats
   `updateMany({ where: {} })` → refreshes *all* rows, so stale dots never get reaped.
   Scope to the caller (`where: { id }`).
-- [ ] **1.2 — Free `busy` on call end.** `app/api/signal/route.ts` has no `end` branch →
+- [x] **1.2 — Free `busy` on call end.** `app/api/signal/route.ts` has no `end` branch →
   peers stay `busy: true` forever after a call, can't reconnect. Add the `end` reset.
 - [ ] **1.3a — Handle `join()` failure.** `app/page.tsx` goes live even if `join()` rejects
   → user is invisible with no error. Catch, show error, stay on the gate.
