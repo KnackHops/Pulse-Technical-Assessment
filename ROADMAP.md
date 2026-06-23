@@ -36,15 +36,30 @@ Three confirmed end-to-end breakers + hardening + a verification pass.
 - [ ] **1.4 — Two-browser verification pass.** See each other → connect → chat both ways →
   video → end video → end → close tab → dot gone ≤15s. Log any new bug as a 1.x item.
 
-## Phase 2 — Make it good (UI/UX) — *sketch, refined when reached*
+## Phase 2 — Make it good (UI/UX)
 
-- [ ] 2.1 Foundation — design tokens, motion lib decision, shared primitives
+Decisions: **motion lib = `motion` (framer-motion)** for enter/exit; **theme = light + dark**
+with a persisted toggle. Setup (user): `npm install motion`.
+
+- [ ] **2.1 Foundation**
+  - [x] 2.1a Design tokens + theme — Tailwind v4 `@theme` in `globals.css`: accent/surface/
+    border/text tokens for **both** light & dark; radius, shadow, glow. Components reference
+    tokens, not raw `zinc-*`.
+  - [x] 2.1b Typography — remove the `body { font-family: Arial }` override so Geist (already
+    loaded in `layout.tsx`) actually applies; set a type scale.
+  - [x] 2.1c Cursor fix — Tailwind v4 dropped the default `cursor: pointer` on `<button>`;
+    add a global base rule in `globals.css` so all buttons feel clickable again.
+  - [ ] 2.1d Theme toggle — context/provider + persistence (**sessionStorage**, clears on tab
+    close to honor the no-persistence ethos; no-flash on load), and swap Mapbox style
+    (`dark-v11` ↔ a light style) in `WorldMap.tsx` on toggle.
+  - [ ] 2.1e Motion + primitives — wire `motion`; extract shared `Button`, `Modal`, `Toast`,
+    `Panel` so 2.2–2.6 reuse them.
 - [ ] 2.2 Entry gate redesign
-- [ ] 2.3 Map & dots (glow, busy state, animated join/leave)
+- [ ] 2.3 Map & dots (glow, busy state, animated join/leave; polished pin-declutter)
 - [ ] 2.4 Connection flow (animated modal + toasts)
 - [ ] 2.5 Chat panel polish
-- [ ] 2.6 Video panel polish
-- [ ] 2.7 Responsive + a11y pass
+- [ ] 2.6 Video panel polish (control bar, mic/cam toggles, end-call, chat-during-video)
+- [ ] 2.7 Responsive + a11y pass (reduced-motion, focus-visible)
 
 ## Phase 3 — Make it secure — *sketch*
 

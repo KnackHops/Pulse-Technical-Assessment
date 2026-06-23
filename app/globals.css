@@ -1,28 +1,95 @@
 @import "tailwindcss";
 
+/* Class-based dark mode: a `.dark` / `.light` class on <html> (set by the theme
+   toggle in 2.1c) wins, but with no class we fall back to the OS preference. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---- Design tokens -------------------------------------------------------
+   Semantic colors only — components reference these (bg-surface, text-muted,
+   bg-accent, …), never raw palette values. Light is the base; dark is applied
+   via the OS preference or an explicit `.dark` class. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fafafa;
+  --surface: #ffffff;
+  --surface-2: #f4f4f5;
+  --border: #e4e4e7;
+  --foreground: #18181b;
+  --muted: #71717a;
+  --accent: #10b981;
+  --accent-foreground: #022c22;
+  --danger: #e11d48;
+  --danger-foreground: #ffffff;
+  --ring: #10b981;
+  /* RGB triplet for the dot glow so we can vary alpha in keyframes. */
+  --dot-glow: 16 185 129;
+}
+
+/* Dark values, shared by the OS-dark default and the explicit `.dark` toggle. */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --background: #09090b;
+    --surface: #18181b;
+    --surface-2: #27272a;
+    --border: #27272a;
+    --foreground: #f4f4f5;
+    --muted: #a1a1aa;
+    --accent: #34d399;
+    --accent-foreground: #022c22;
+    --danger: #fb7185;
+    --danger-foreground: #1f0a10;
+    --ring: #34d399;
+    --dot-glow: 52 211 153;
+  }
+}
+
+.dark {
+  --background: #09090b;
+  --surface: #18181b;
+  --surface-2: #27272a;
+  --border: #27272a;
+  --foreground: #f4f4f5;
+  --muted: #a1a1aa;
+  --accent: #34d399;
+  --accent-foreground: #022c22;
+  --danger: #fb7185;
+  --danger-foreground: #1f0a10;
+  --ring: #34d399;
+  --dot-glow: 52 211 153;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-ring: var(--ring);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --radius: 0.75rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Tailwind v4's Preflight no longer sets cursor:pointer on buttons (it follows
+   the browser default of `default`). Restore the expected affordance app-wide;
+   disabled buttons keep the default cursor. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Geist is loaded in layout.tsx and mapped to --font-sans in @theme; use it
+     instead of the old Arial fallback that was silently overriding it. */
+  font-family: var(--font-sans), system-ui, sans-serif;
 }
 
 /* Live user dots on the map */
