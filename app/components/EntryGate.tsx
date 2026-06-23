@@ -5,7 +5,7 @@ import { useState } from "react";
 export default function EntryGate({
   onReady,
 }: {
-  onReady: (lat: number, lng: number) => void;
+  onReady: (lat: number, lng: number) => void | Promise<void>;
 }) {
   const [status, setStatus] = useState<"idle" | "locating" | "error">("idle");
   const [error, setError] = useState<string>("");
@@ -18,7 +18,16 @@ export default function EntryGate({
     }
     setStatus("locating");
     navigator.geolocation.getCurrentPosition(
-      (pos) => onReady(pos.coords.latitude, pos.coords.longitude),
+      (pos) => {
+        // onReady joins the server; if that fails, surface it and stay on the
+        // gate instead of leaving the button stuck on "Locating…".
+        Promise.resolve(
+          onReady(pos.coords.latitude, pos.coords.longitude),
+        ).catch(() => {
+          setStatus("error");
+          setError("Couldn't reach the server. Check your connection and try again.");
+        });
+      },
       (err) => {
         setStatus("error");
         setError(

@@ -6,11 +6,15 @@ export async function join(
   lat: number,
   lng: number,
 ): Promise<void> {
-  await fetch("/api/join", {
+  // fetch only rejects on network errors, not on HTTP 4xx/5xx — so check the
+  // status explicitly. Without this a failed join (e.g. a 500) resolves
+  // silently and the caller goes "live" with no presence row: invisible.
+  const res = await fetch("/api/join", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id, lat, lng }),
   });
+  if (!res.ok) throw new Error(`join failed: ${res.status}`);
 }
 
 export async function poll(id: string): Promise<PollResponse> {

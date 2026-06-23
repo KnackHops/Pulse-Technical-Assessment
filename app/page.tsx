@@ -304,8 +304,12 @@ export default function Home() {
   }, [sessionId, phase]);
 
   async function handleReady(lat: number, lng: number) {
-    setMyLocation({ lat, lng });
+    // Only go live once the join actually succeeds. If it throws, let it
+    // propagate to EntryGate (which shows the error and stays on the gate) —
+    // otherwise the user would appear "live" with no presence row: invisible
+    // to everyone, with no indication anything went wrong.
     await join(sessionId, lat, lng);
+    setMyLocation({ lat, lng });
     setPhase("live");
   }
 

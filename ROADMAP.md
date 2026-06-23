@@ -24,8 +24,10 @@ Three confirmed end-to-end breakers + hardening + a verification pass.
   Scope to the caller (`where: { id }`).
 - [x] **1.2 — Free `busy` on call end.** `app/api/signal/route.ts` has no `end` branch →
   peers stay `busy: true` forever after a call, can't reconnect. Add the `end` reset.
-- [ ] **1.3a — Handle `join()` failure.** `app/page.tsx` goes live even if `join()` rejects
-  → user is invisible with no error. Catch, show error, stay on the gate.
+- [x] **1.3a — Handle `join()` failure.** `app/page.tsx` goes live even if `join()` rejects
+  → user is invisible with no error. Root cause: `lib/api.ts` `join()` never checked
+  `res.ok`, so an HTTP 500 resolved silently. Throw on non-2xx, go live only on success, and
+  surface the error in `EntryGate` (stay on the gate).
 - [ ] **1.4 — Two-browser verification pass.** See each other → connect → chat both ways →
   video → end video → end → close tab → dot gone ≤15s. Log any new bug as a 1.x item.
 
