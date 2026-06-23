@@ -6,10 +6,11 @@ Per-phase write-up. See [`ROADMAP.md`](./ROADMAP.md) for the execution checklist
 
 ## Phase 1 — Make it run
 
-*What was broken, how I found it, how I fixed it.*
+I first did a rundown checkup using claude of what was obviously broken. Then I hands on tested the app through the flow. If I encounter a bug I check if it's already in the checklist, if it is I fix it then I continue the flow. If not I add it first, fix, then continue again.
 
-_(in progress)_
+The only one that the agent missed is sub phase 1.5 it seems. regarding video controls being pushed off of the screen. Other than that everything seems to have been seen. I will come back to this as I play around even more. As I'm bound to see one or two more that I missed.
 
+Also decided to deploy for video call testing.
 ---
 
 ## Phase 2 — Make it good
