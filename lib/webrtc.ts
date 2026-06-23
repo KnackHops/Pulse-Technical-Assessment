@@ -28,6 +28,10 @@ export class PeerSession {
   private closed = false;
   private readonly cb: PeerCallbacks;
   private pendingCandidates: RTCIceCandidateInit[] = [];
+  // Signals can arrive in the same poll batch and are dispatched un-awaited, so
+  // serialize them — otherwise an ICE candidate can race ahead of the
+  // setRemoteDescription() it depends on and get dropped.
+  private opChain: Promise<void> = Promise.resolve();
 
   constructor(initiator: boolean, cb: PeerCallbacks) {
     this.cb = cb;
@@ -85,7 +89,16 @@ export class PeerSession {
     };
   }
 
-  async handleSignal(type: DescType, payload: string) {
+  // Public entry point: chain every incoming signal so they apply strictly in
+  // order, even though callers dispatch them without awaiting.
+  handleSignal(type: DescType, payload: string): Promise<void> {
+    this.opChain = this.opChain
+      .then(() => this.applySignal(type, payload))
+      .catch(() => {});
+    return this.opChain;
+  }
+
+  private async applySignal(type: DescType, payload: string) {
     if (this.closed) return;
     const data = JSON.parse(payload);
 
@@ -107,8 +120,10 @@ export class PeerSession {
     this.ignoreOffer = !this.polite && offerCollision;
     if (this.ignoreOffer) return;
 
-    await this.flushPendingCandidates();
     await this.pc.setRemoteDescription(desc);
+    // Candidates can only be added once the remote description exists, so flush
+    // any that were queued before it arrived.
+    await this.flushPendingCandidates();
     if (desc.type === "offer") {
       await this.pc.setLocalDescription();
       if (this.pc.localDescription) {
@@ -129,7 +144,7 @@ export class PeerSession {
   }
 
   sendChat(text: string) {
-    this.safeSend({ t: "msg", text });
+    this.safeSend({ t: "chat", text });
   }
 
   sendControl(ctrl: PeerControl) {

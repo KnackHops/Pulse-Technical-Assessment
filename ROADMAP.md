@@ -12,9 +12,14 @@ Phases & weights: **1 Make it run (15%)** · **2 Make it good (30%)** · **3 Mak
 
 Three confirmed end-to-end breakers + hardening + a verification pass.
 
-- [ ] **1.1a — Fix chat (data-channel type mismatch).** `lib/webrtc.ts` `sendChat()` sends
+- [x] **1.1a — Fix chat (data-channel type mismatch).** `lib/webrtc.ts` `sendChat()` sends
   `{ t: "msg" }` but the receiver checks `t === "chat"` → every message dropped.
-- [ ] **1.1b — Fix presence reaping (poll heartbeat).** `app/api/poll/route.ts` heartbeats
+- [x] **1.1b — Fix WebRTC ICE race (stuck on "connecting").** Found in testing. In
+  `lib/webrtc.ts`, `handleSignal()` flushed ICE candidates *before* `setRemoteDescription`,
+  and signals are dispatched un-awaited so an offer + its candidates (same poll batch) ran
+  concurrently → queued candidates never re-flushed → ICE never completes. Serialize signals
+  via a promise chain; flush candidates *after* the remote description is set.
+- [ ] **1.1c — Fix presence reaping (poll heartbeat).** `app/api/poll/route.ts` heartbeats
   `updateMany({ where: {} })` → refreshes *all* rows, so stale dots never get reaped.
   Scope to the caller (`where: { id }`).
 - [ ] **1.2 — Free `busy` on call end.** `app/api/signal/route.ts` has no `end` branch →
