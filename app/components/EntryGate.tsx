@@ -132,7 +132,7 @@ export default function EntryGate({
             placeholder="e.g. night owl, here to chat about music"
             className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none placeholder:text-muted focus:ring-1 focus:ring-ring"
           />
-          <p className="mt-1 text-right text-xs text-muted">
+          <p className="mt-1 text-left text-xs text-muted">
             {intro.length}/{MAX_INTRO_LEN} · shown to strangers on hover
           </p>
         </div>

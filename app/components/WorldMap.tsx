@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import "mapbox-gl/dist/mapbox-gl.css";
 import type { Map as MapboxMap, Marker } from "mapbox-gl";
 import type { PeerDot } from "@/lib/types";
@@ -8,6 +8,12 @@ import { useTheme } from "./ThemeProvider";
 import { MAP_STYLE } from "@/lib/mapStyle";
 
 const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "pk.eyJ1IjoicHVsc2UtbWFwIiwiYSI6ImNrMDBkZW1vMDAwMDAwMDAifQ.AAAAAAAAAAAAAAAAAAAAAA";
+
+// Markers closer than COLLISION_PX (screen px) are treated as stacked; peers in
+// a cluster get fanned out by SPREAD_PX so none hides (or is unclickable) under
+// "Me" or another peer.
+const COLLISION_PX = 30;
+const SPREAD_PX = 30;
 
 // Deterministic per-id hue (0–359) — drives the dot fill, glow, and pulse ring.
 function dotHue(id: string): number {
@@ -46,6 +52,57 @@ export default function WorldMap({
     onPeerClickRef.current = onPeerClick;
     canConnectRef.current = canConnect;
   });
+
+  // Fan out markers that overlap on screen so a peer never hides (and stays
+  // clickable) under "Me" or another peer when their privacy offsets collide.
+  // Offset is purely visual (px); grouping uses the true projected coords, so
+  // it's stable across pans and only needs re-running when zoom changes spacing.
+  const declutter = useCallback(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    type P = { marker: Marker; px: { x: number; y: number }; fixed: boolean };
+    const pts: P[] = [];
+    if (meMarkerRef.current) {
+      pts.push({
+        marker: meMarkerRef.current,
+        px: map.project(meMarkerRef.current.getLngLat()),
+        fixed: true, // "Me" stays put; only peers move around it.
+      });
+    }
+    for (const marker of markersRef.current.values()) {
+      pts.push({ marker, px: map.project(marker.getLngLat()), fixed: false });
+    }
+
+    const used = new Array(pts.length).fill(false);
+    for (let i = 0; i < pts.length; i++) {
+      if (used[i]) continue;
+      const group = [i];
+      used[i] = true;
+      for (let j = i + 1; j < pts.length; j++) {
+        if (used[j]) continue;
+        const dx = pts[i].px.x - pts[j].px.x;
+        const dy = pts[i].px.y - pts[j].px.y;
+        if (dx * dx + dy * dy < COLLISION_PX * COLLISION_PX) {
+          group.push(j);
+          used[j] = true;
+        }
+      }
+
+      const movable = group.filter((k) => !pts[k].fixed);
+      if (group.length === 1) {
+        if (movable.length) pts[group[0]].marker.setOffset([0, 0]);
+        continue;
+      }
+      movable.forEach((k, idx) => {
+        const angle = (2 * Math.PI * idx) / movable.length - Math.PI / 2;
+        pts[k].marker.setOffset([
+          Math.cos(angle) * SPREAD_PX,
+          Math.sin(angle) * SPREAD_PX,
+        ]);
+      });
+    }
+  }, []);
 
   // Initialise the map once.
   useEffect(() => {
@@ -117,12 +174,13 @@ export default function WorldMap({
       } else {
         meMarkerRef.current.setLngLat([me.lng, me.lat]);
       }
+      declutter();
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [me, ready, meId]);
+  }, [me, ready, meId, declutter]);
 
   // Reconcile markers whenever the peer list changes (or the map becomes ready).
   useEffect(() => {
@@ -186,19 +244,34 @@ export default function WorldMap({
         el.setAttribute("aria-label", intro ? intro : "Tap to connect");
       }
 
-      // Drop markers for peers that went offline / got filtered out.
+      // Drop markers for peers that went offline. Stop tracking immediately,
+      // then play the exit animation before actually removing the marker.
       for (const [id, marker] of markers) {
         if (!seen.has(id)) {
-          marker.remove();
           markers.delete(id);
+          marker.getElement().classList.add("leaving");
+          setTimeout(() => marker.remove(), 260);
         }
       }
+
+      declutter();
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [peers, ready]);
+  }, [peers, ready, declutter]);
+
+  // Re-evaluate overlap whenever zoom changes the on-screen spacing.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    const handler = () => declutter();
+    map.on("zoom", handler);
+    return () => {
+      map.off("zoom", handler);
+    };
+  }, [ready, declutter]);
 
   return (
     <div className="absolute inset-0">

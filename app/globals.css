@@ -104,8 +104,38 @@ body {
   border: 2px solid rgba(255, 255, 255, 0.9);
   cursor: pointer;
   padding: 0;
-  animation: pulse-ring 2s ease-out infinite;
+  animation:
+    pulse-ring 2s ease-out infinite,
+    dot-in 0.28s ease-out;
   transition: transform 0.12s ease;
+}
+
+/* Leaving = peer went offline: scale/fade out before the marker is removed. */
+.pulse-dot.leaving {
+  animation: dot-out 0.24s ease-in forwards;
+  pointer-events: none;
+}
+
+@keyframes dot-in {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes dot-out {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0);
+    opacity: 0;
+  }
 }
 
 .pulse-dot:hover {
@@ -266,5 +296,9 @@ body {
   .pulse-me::after {
     animation: none;
     opacity: 0;
+  }
+  .pulse-dot,
+  .pulse-dot.leaving {
+    animation: none;
   }
 }

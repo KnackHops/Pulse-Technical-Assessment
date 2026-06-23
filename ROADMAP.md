@@ -71,10 +71,15 @@ with a persisted toggle. Setup (user): `npm install motion`.
   input focus / button click. (Showcases the Phase 4 "introduce yourself" feature.)
 - [ ] **2.3 Map & dots**
   - [x] 2.3a Dot redesign — per-id **hue** drives the dot fill + matching glow + pulse ring
-    (was a white ring); hue-colored ringed **"Me"** pin (replaces the 📍 emoji); **busy** =
-    dimmed + 📞 with the pulse stopped. (`globals.css`, `WorldMap.tsx`, `page.tsx`.)
-  - [ ] 2.3b Animated join/leave (fade/scale dots in + out)
-  - [ ] 2.3c Pin declutter (fan overlapping pins; the 1.0 idea, done well)
+    (was a white ring); **"Me"** = a radar beacon (hue center + slow ping ring, replaces the 📍
+    emoji); **busy** = dimmed + a crisp **white lock** (inline `<svg>`) with the pulse stopped;
+    peer intro shows as a dark hover pill (matches the gate pins). (`globals.css`, `WorldMap.tsx`,
+    `page.tsx`.)
+  - [x] 2.3b Animated join/leave — dots scale/fade in on appear (`dot-in`), and scale/fade out
+    before removal (`.leaving` + delayed `marker.remove()`); reduced-motion just appears/vanishes.
+  - [x] 2.3c Pin declutter — `declutter()` projects Me + peers to screen px, groups overlaps,
+    fans grouped peers radially via `Marker.setOffset` (Me fixed), resets when they separate;
+    recomputed on peer changes + zoom. Stacked peers stay visible + clickable.
   - [ ] 2.3d Online-counter polish
 - [ ] 2.4 Connection flow (animated modal + toasts)
 - [ ] 2.5 Chat panel polish
