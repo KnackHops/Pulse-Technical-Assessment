@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import Button from "./ui/Button";
 import GateGlobe from "./GateGlobe";
@@ -29,15 +29,17 @@ export default function EntryGate({
   // Bumped on each interaction to replay the emerald edge-pulse animation.
   const [pulseKey, setPulseKey] = useState(0);
   const pulse = () => setPulseKey((k) => k + 1);
-  // Prefill from sessionStorage (survives refresh, clears on tab close — same
-  // ephemeral model as the theme + the privacy ethos).
-  const [intro, setIntro] = useState<string>(() => {
+  // Start empty for SSR/client parity, then hydrate from sessionStorage after
+  // mount (reading storage during render would mismatch the server's "0/60").
+  // Survives refresh, clears on tab close — same ephemeral model as the theme.
+  const [intro, setIntro] = useState("");
+  useEffect(() => {
     try {
-      return sessionStorage.getItem(INTRO_KEY) ?? "";
-    } catch {
-      return "";
-    }
-  });
+      const saved = sessionStorage.getItem(INTRO_KEY);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (saved) setIntro(saved);
+    } catch {}
+  }, []);
 
   function updateIntro(value: string) {
     const next = value.slice(0, MAX_INTRO_LEN);

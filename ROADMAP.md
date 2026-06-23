@@ -64,7 +64,13 @@ with a persisted toggle. Setup (user): `npm install motion`.
   — masked bright copy of the grid sweeping like radar) + radial vignette; demo intro pins on
   the globe; frosted panel **centered** (`grid place-items-center`); emerald edge-pulse on
   input focus / button click. (Showcases the Phase 4 "introduce yourself" feature.)
-- [ ] 2.3 Map & dots (glow, busy state, animated join/leave; polished pin-declutter)
+- [ ] **2.3 Map & dots**
+  - [x] 2.3a Dot redesign — per-id **hue** drives the dot fill + matching glow + pulse ring
+    (was a white ring); hue-colored ringed **"Me"** pin (replaces the 📍 emoji); **busy** =
+    dimmed + 📞 with the pulse stopped. (`globals.css`, `WorldMap.tsx`, `page.tsx`.)
+  - [ ] 2.3b Animated join/leave (fade/scale dots in + out)
+  - [ ] 2.3c Pin declutter (fan overlapping pins; the 1.0 idea, done well)
+  - [ ] 2.3d Online-counter polish
 - [ ] 2.4 Connection flow (animated modal + toasts)
 - [ ] 2.5 Chat panel polish
 - [ ] 2.6 Video panel polish (control bar, mic/cam toggles, end-call, chat-during-video)

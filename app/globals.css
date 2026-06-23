@@ -94,30 +94,102 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
-/* Live user dots on the map */
+/* Live user dots on the map. Color is per-id: WorldMap sets `--dot-hue` and the
+   background, and the glow + pulse ring derive from the same hue. */
 .pulse-dot {
-  width: 14px;
-  height: 14px;
+  position: relative;
+  width: 16px;
+  height: 16px;
   border-radius: 9999px;
   border: 2px solid rgba(255, 255, 255, 0.9);
   cursor: pointer;
   padding: 0;
-  box-shadow: 0 0 0 rgba(255, 255, 255, 0.5);
   animation: pulse-ring 2s ease-out infinite;
-  transition: transform 0.1s ease;
+  transition: transform 0.12s ease;
 }
 
 .pulse-dot:hover {
   transform: scale(1.3);
 }
 
-/* The user's own "you are here" pin — small, sized like the dots. */
+/* Peer intro pill — same dark bubble as the gate/Me labels, revealed on hover. */
+.pulse-dot-label {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 1px 7px;
+  border-radius: 9999px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  pointer-events: none;
+}
+
+.pulse-dot:hover .pulse-dot-label {
+  opacity: 1;
+}
+
+/* Busy = in a call: stop pulsing, dim, show a phone glyph. */
+.pulse-dot.busy {
+  animation: none;
+  opacity: 0.5;
+  box-shadow: 0 0 6px hsl(var(--dot-hue, 160) 70% 60% / 0.5);
+}
+
+.pulse-dot.busy::after {
+  content: "📞";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+}
+
+/* The user's own "you are here" pin — a radar beacon: solid hue center with a
+   slow continuous expanding "ping" ring, distinct from peers' quick pulse. */
 .pulse-me {
   position: relative;
-  font-size: 18px;
-  line-height: 1;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: hsl(var(--dot-hue, 160) 70% 55%);
+  border: 3px solid #fff;
+  box-shadow:
+    0 0 0 2px hsl(var(--dot-hue, 160) 70% 55% / 0.45),
+    0 0 14px hsl(var(--dot-hue, 160) 70% 55% / 0.85);
   cursor: default;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+}
+
+.pulse-me::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  border: 2px solid hsl(var(--dot-hue, 160) 70% 55%);
+  animation: me-ping 3s ease-out infinite;
+}
+
+@keyframes me-ping {
+  0% {
+    width: 18px;
+    height: 18px;
+    opacity: 0.6;
+  }
+  100% {
+    width: 64px;
+    height: 64px;
+    opacity: 0;
+  }
 }
 
 .pulse-me-label {
@@ -125,7 +197,7 @@ body {
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
-  margin-bottom: 1px;
+  margin-bottom: 12px;
   font-size: 10px;
   font-weight: 700;
   color: #ffffff;
@@ -135,15 +207,22 @@ body {
   white-space: nowrap;
 }
 
+/* Steady colored glow + an expanding ring, both from the dot's hue. */
 @keyframes pulse-ring {
   0% {
-    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+    box-shadow:
+      0 0 7px 0 hsl(var(--dot-hue, 160) 70% 60% / 0.7),
+      0 0 0 0 hsl(var(--dot-hue, 160) 70% 60% / 0.45);
   }
   70% {
-    box-shadow: 0 0 0 8px rgba(255, 255, 255, 0);
+    box-shadow:
+      0 0 7px 0 hsl(var(--dot-hue, 160) 70% 60% / 0.7),
+      0 0 0 9px hsl(var(--dot-hue, 160) 70% 60% / 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    box-shadow:
+      0 0 7px 0 hsl(var(--dot-hue, 160) 70% 60% / 0.7),
+      0 0 0 0 hsl(var(--dot-hue, 160) 70% 60% / 0);
   }
 }
 
@@ -177,6 +256,10 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .gate-grid-sweep {
+    animation: none;
+    opacity: 0;
+  }
+  .pulse-me::after {
     animation: none;
     opacity: 0;
   }

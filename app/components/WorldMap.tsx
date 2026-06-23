@@ -9,22 +9,25 @@ import { MAP_STYLE } from "@/lib/mapStyle";
 
 const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "pk.eyJ1IjoicHVsc2UtbWFwIiwiYSI6ImNrMDBkZW1vMDAwMDAwMDAifQ.AAAAAAAAAAAAAAAAAAAAAA";
 
-function dotColor(id: string): string {
+// Deterministic per-id hue (0–359) — drives the dot fill, glow, and pulse ring.
+function dotHue(id: string): number {
   let hash = 0;
   for (let i = 0; i < id.length; i++) {
     hash = (hash * 31 + id.charCodeAt(i)) | 0;
   }
-  return `hsl(${Math.abs(hash) % 360}, 70%, 60%)`;
+  return Math.abs(hash) % 360;
 }
 
 export default function WorldMap({
   peers,
   me,
+  meId,
   onPeerClick,
   canConnect,
 }: {
   peers: PeerDot[];
   me: { lat: number; lng: number } | null;
+  meId: string;
   onPeerClick: (id: string) => void;
   canConnect: boolean;
 }) {
@@ -106,9 +109,9 @@ export default function WorldMap({
         const el = document.createElement("div");
         el.className = "pulse-me";
         el.title = "You are here";
-        el.innerHTML = `<span class="pulse-me-label">Me</span>📍`;
-        // anchor "bottom" → the pin's tip sits on the exact coordinate.
-        meMarkerRef.current = new mapboxgl.Marker({ element: el, anchor: "bottom" })
+        el.style.setProperty("--dot-hue", String(dotHue(meId)));
+        el.innerHTML = `<span class="pulse-me-label">Me</span>`;
+        meMarkerRef.current = new mapboxgl.Marker({ element: el, anchor: "center" })
           .setLngLat([me.lng, me.lat])
           .addTo(map);
       } else {
@@ -119,7 +122,7 @@ export default function WorldMap({
     return () => {
       cancelled = true;
     };
-  }, [me, ready]);
+  }, [me, ready, meId]);
 
   // Reconcile markers whenever the peer list changes (or the map becomes ready).
   useEffect(() => {
@@ -139,7 +142,9 @@ export default function WorldMap({
         if (!marker) {
           const el = document.createElement("button");
           el.className = "pulse-dot";
-          el.style.background = dotColor(peer.id);
+          const hue = dotHue(peer.id);
+          el.style.setProperty("--dot-hue", String(hue));
+          el.style.background = `hsl(${hue} 70% 60%)`;
           el.addEventListener("click", (e) => {
             e.stopPropagation();
             if (canConnectRef.current) onPeerClickRef.current(peer.id);
@@ -151,9 +156,22 @@ export default function WorldMap({
         }
         // Updated every pass (not just on create) since intro/busy can change.
         const el = marker.getElement();
-        el.style.opacity = peer.busy ? "0.35" : "1";
-        // Native tooltip on hover shows the peer's intro (2.2b prettifies this).
-        el.title = peer.intro?.trim() ? peer.intro : "Tap to connect";
+        el.classList.toggle("busy", peer.busy);
+        // Styled hover pill for the intro (matches the gate/Me labels). Create /
+        // update / remove the label child to mirror the current intro.
+        const intro = peer.intro?.trim();
+        let label = el.querySelector<HTMLSpanElement>(".pulse-dot-label");
+        if (intro) {
+          if (!label) {
+            label = document.createElement("span");
+            label.className = "pulse-dot-label";
+            el.appendChild(label);
+          }
+          label.textContent = intro;
+        } else if (label) {
+          label.remove();
+        }
+        el.setAttribute("aria-label", intro ? intro : "Tap to connect");
       }
 
       // Drop markers for peers that went offline / got filtered out.

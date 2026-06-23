@@ -333,6 +333,7 @@ export default function Home() {
       <WorldMap
         peers={peers}
         me={myLocation}
+        meId={sessionId}
         onPeerClick={requestConnection}
         canConnect={conn.kind === "idle"}
       />
