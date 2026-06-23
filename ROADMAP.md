@@ -49,9 +49,13 @@ with a persisted toggle. Setup (user): `npm install motion`.
     loaded in `layout.tsx`) actually applies; set a type scale.
   - [x] 2.1c Cursor fix — Tailwind v4 dropped the default `cursor: pointer` on `<button>`;
     add a global base rule in `globals.css` so all buttons feel clickable again.
-  - [ ] 2.1d Theme toggle — context/provider + persistence (**sessionStorage**, clears on tab
+  - [x] 2.1d Theme toggle — context/provider + persistence (**sessionStorage**, clears on tab
     close to honor the no-persistence ethos; no-flash on load), and swap Mapbox style
     (`dark-v11` ↔ a light style) in `WorldMap.tsx` on toggle.
+  - [x] 2.1f Migrate components to tokens — replace hardcoded `zinc/emerald/red` in
+    `EntryGate`, `ChatPanel`, `ConnectionPrompt`, `VideoPanel`, `WorldMap`, `page.tsx` pills
+    with semantic tokens so the theme actually applies app-wide; move toggle to top-left so it
+    doesn't collide with the connection pills. (Deep visual polish still in 2.2–2.6.)
   - [ ] 2.1e Motion + primitives — wire `motion`; extract shared `Button`, `Modal`, `Toast`,
     `Panel` so 2.2–2.6 reuse them.
 - [ ] 2.2 Entry gate redesign

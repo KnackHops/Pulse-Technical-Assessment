@@ -15,11 +15,13 @@
   --border: #e4e4e7;
   --foreground: #18181b;
   --muted: #71717a;
-  --accent: #10b981;
-  --accent-foreground: #022c22;
+  /* emerald-600 + white text: deep enough that white passes contrast on the
+     accent buttons in light mode (emerald-500 was too light for white). */
+  --accent: #059669;
+  --accent-foreground: #ffffff;
   --danger: #e11d48;
   --danger-foreground: #ffffff;
-  --ring: #10b981;
+  --ring: #059669;
   /* RGB triplet for the dot glow so we can vary alpha in keyframes. */
   --dot-glow: 16 185 129;
 }
