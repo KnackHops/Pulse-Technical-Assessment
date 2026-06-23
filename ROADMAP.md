@@ -28,6 +28,11 @@ Three confirmed end-to-end breakers + hardening + a verification pass.
   → user is invisible with no error. Root cause: `lib/api.ts` `join()` never checked
   `res.ok`, so an HTTP 500 resolved silently. Throw on non-2xx, go live only on success, and
   surface the error in `EntryGate` (stay on the gate).
+- [x] **1.5 — Fix video-panel overflow.** Found in live testing. `app/components/VideoPanel.tsx`:
+  once the remote stream loads, the `flex-1` video wrapper (default `min-height: auto`) grows to
+  the video's intrinsic resolution and pushes the control bar + local PiP off-screen — the user
+  can't end the call. Add `min-h-0 overflow-hidden` so it shrinks to the flex track. (Mic/cam/
+  end-call controls are Phase 2.6.)
 - [ ] **1.4 — Two-browser verification pass.** See each other → connect → chat both ways →
   video → end video → end → close tab → dot gone ≤15s. Log any new bug as a 1.x item.
 
