@@ -33,6 +33,11 @@ Three confirmed end-to-end breakers + hardening + a verification pass.
   the video's intrinsic resolution and pushes the control bar + local PiP off-screen — the user
   can't end the call. Add `min-h-0 overflow-hidden` so it shrinks to the flex track. (Mic/cam/
   end-call controls are Phase 2.6.)
+- [x] **1.6 — Free `busy` when a peer disconnects abruptly.** Found in testing. On a
+  hard-refresh/close mid-call, `leave` deletes the leaver's row but can't clear the partner's
+  `busy` (no server-side pairing), so the survivor stays locked forever. Fix in `app/page.tsx`:
+  the poll tick detects when a connected/connecting peer vanishes from `peers` → sends `end`
+  (frees own busy) + tears down; also frees busy on a WebRTC `failed` state.
 - [ ] **1.4 — Two-browser verification pass.** See each other → connect → chat both ways →
   video → end video → end → close tab → dot gone ≤15s. Log any new bug as a 1.x item.
 

@@ -85,6 +85,13 @@ export default function Home() {
       onRemoteStream: (stream) => setRemoteStream(stream),
       onConnectionState: (state) => {
         if (state === "failed") {
+          // Free both peers' busy flag — the connection is dead.
+          if (
+            connRef.current.kind === "connecting" ||
+            connRef.current.kind === "connected"
+          ) {
+            void sendSignal(sessionId, peerId, "end");
+          }
           teardown("Connection failed (network).");
         }
       },
@@ -283,6 +290,19 @@ export default function Home() {
         if (!active) return;
         setPeers(data.peers);
         for (const s of data.signals) processSignalRef.current(s);
+
+        // If our connected/connecting peer has vanished from presence (they
+        // hard-refreshed or closed without sending "end"), their leave deleted
+        // their row but couldn't clear our busy flag — there's no server-side
+        // pairing. Detect the absence and free ourselves.
+        const c = connRef.current;
+        if (
+          (c.kind === "connecting" || c.kind === "connected") &&
+          !data.peers.some((p) => p.id === c.peerId)
+        ) {
+          void sendSignal(sessionId, c.peerId, "end");
+          teardown("Stranger disconnected.");
+        }
       } catch {}
       if (active) timer = setTimeout(tick, POLL_INTERVAL_MS);
     };
@@ -292,6 +312,9 @@ export default function Home() {
       active = false;
       if (timer) clearTimeout(timer);
     };
+    // teardown only touches stable setters/refs; don't restart polling on its
+    // identity change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, sessionId]);
 
   useEffect(() => {

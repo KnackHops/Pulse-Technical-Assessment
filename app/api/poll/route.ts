@@ -29,9 +29,26 @@ export async function GET(request: NextRequest) {
     data: { lastSeen: new Date(now) },
   });
 
-  // 2) Reap stale presence rows and orphaned signals (independent deletes —
-  // no atomicity needed, and avoids transactions over a PgBouncer pooler).
-  await prisma.presence.deleteMany({ where: { lastSeen: { lt: staleCutoff } } });
+  // 2) Reap stale presence rows + orphaned signals. Before deleting stale rows,
+  // free any partners they were paired with so nobody is left stuck "busy".
+  const stale = await prisma.presence.findMany({
+    where: { lastSeen: { lt: staleCutoff } },
+    select: { id: true, peerId: true },
+  });
+  if (stale.length > 0) {
+    const partnerIds = stale
+      .map((s) => s.peerId)
+      .filter((p): p is string => !!p);
+    if (partnerIds.length > 0) {
+      await prisma.presence.updateMany({
+        where: { id: { in: partnerIds } },
+        data: { busy: false, peerId: null },
+      });
+    }
+    await prisma.presence.deleteMany({
+      where: { id: { in: stale.map((s) => s.id) } },
+    });
+  }
   await prisma.signal.deleteMany({ where: { createdAt: { lt: signalCutoff } } });
 
   // 3) Online peers, excluding self.

@@ -20,6 +20,19 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "invalid id" }, { status: 400 });
   }
 
+  // If this user was in a call, free their partner (clear busy + pairing) —
+  // otherwise the partner stays "busy" forever after we delete this row.
+  const me = await prisma.presence.findUnique({
+    where: { id },
+    select: { peerId: true },
+  });
+  if (me?.peerId) {
+    await prisma.presence.updateMany({
+      where: { id: me.peerId },
+      data: { busy: false, peerId: null },
+    });
+  }
+
   // Independent cleanup deletes — no atomicity needed (and interactive
   // transactions are unreliable over a PgBouncer pooler).
   await prisma.signal.deleteMany({

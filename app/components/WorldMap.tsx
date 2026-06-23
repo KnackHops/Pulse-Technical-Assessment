@@ -157,6 +157,18 @@ export default function WorldMap({
         // Updated every pass (not just on create) since intro/busy can change.
         const el = marker.getElement();
         el.classList.toggle("busy", peer.busy);
+        // Inline white lock while busy (DOM svg — reliable vs CSS mask).
+        const lock = el.querySelector<SVGElement>(".pulse-dot-lock");
+        if (peer.busy) {
+          if (!lock) {
+            el.insertAdjacentHTML(
+              "beforeend",
+              `<svg class="pulse-dot-lock" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12 1a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V6a5 5 0 0 0-5-5zm-3 8V6a3 3 0 0 1 6 0v3H9z"/></svg>`,
+            );
+          }
+        } else if (lock) {
+          lock.remove();
+        }
         // Styled hover pill for the intro (matches the gate/Me labels). Create /
         // update / remove the label child to mirror the current intro.
         const intro = peer.intro?.trim();
