@@ -5,13 +5,9 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import type { Map as MapboxMap, Marker } from "mapbox-gl";
 import type { PeerDot } from "@/lib/types";
 import { useTheme } from "./ThemeProvider";
+import { MAP_STYLE } from "@/lib/mapStyle";
 
 const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "pk.eyJ1IjoicHVsc2UtbWFwIiwiYSI6ImNrMDBkZW1vMDAwMDAwMDAifQ.AAAAAAAAAAAAAAAAAAAAAA";
-
-const MAP_STYLE = {
-  dark: "mapbox://styles/mapbox/dark-v11",
-  light: "mapbox://styles/mapbox/light-v11",
-} as const;
 
 function dotColor(id: string): string {
   let hash = 0;

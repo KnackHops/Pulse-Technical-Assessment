@@ -1,10 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "motion/react";
 import Button from "./ui/Button";
+import GateGlobe from "./GateGlobe";
+import GateGrid from "./GateGrid";
 import { MAX_INTRO_LEN } from "@/lib/types";
 
 const INTRO_KEY = "pulse-intro";
+
+// Radial fade so the globe dissolves into the background toward the edges.
+const VIGNETTE: React.CSSProperties = {
+  background:
+    "radial-gradient(ellipse at center, transparent 30%, var(--background) 78%)",
+};
 
 export default function EntryGate({
   onReady,
@@ -17,6 +26,9 @@ export default function EntryGate({
 }) {
   const [status, setStatus] = useState<"idle" | "locating" | "error">("idle");
   const [error, setError] = useState<string>("");
+  // Bumped on each interaction to replay the emerald edge-pulse animation.
+  const [pulseKey, setPulseKey] = useState(0);
+  const pulse = () => setPulseKey((k) => k + 1);
   // Prefill from sessionStorage (survives refresh, clears on tab close — same
   // ephemeral model as the theme + the privacy ethos).
   const [intro, setIntro] = useState<string>(() => {
@@ -36,6 +48,7 @@ export default function EntryGate({
   }
 
   function enter() {
+    pulse();
     if (!("geolocation" in navigator)) {
       setStatus("error");
       setError("Your browser doesn't support location access.");
@@ -68,45 +81,78 @@ export default function EntryGate({
   }
 
   return (
-    <div className="flex min-h-full flex-1 flex-col items-center justify-center gap-8 bg-background p-6 text-foreground">
-      <div className="text-center">
+    <div className="fixed inset-0 overflow-hidden bg-background text-foreground">
+      {/* Animated green grid behind the globe. */}
+      <GateGrid />
+      <GateGlobe />
+      {/* Fade the globe edges into the background. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={VIGNETTE}
+      />
+
+      {/* Dead-center the panel (grid place-items-center is reliable here). */}
+      <div className="absolute inset-0 grid place-items-center p-6">
+        <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="relative w-full max-w-sm rounded-3xl border border-border bg-surface/70 p-8 text-center shadow-2xl backdrop-blur-xl"
+      >
+        {/* Emerald edge-pulse, replayed on each interaction via the key. */}
+        <motion.span
+          key={pulseKey}
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-3xl ring-2 ring-accent"
+          initial={{ opacity: pulseKey === 0 ? 0 : 0.7, scale: 1 }}
+          animate={{ opacity: 0, scale: 1.04 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+        />
+
         <h1 className="text-4xl font-bold tracking-tight">Pulse</h1>
-        <p className="mt-2 max-w-sm text-muted">
+        <p className="mt-2 text-muted">
           A living globe of anonymous strangers. Drop onto the map and connect.
         </p>
-      </div>
 
-      <div className="w-full max-w-sm">
-        <label htmlFor="intro" className="mb-1 block text-sm font-medium">
-          Introduce yourself{" "}
-          <span className="font-normal text-muted">(optional)</span>
-        </label>
-        <input
-          id="intro"
-          value={intro}
-          suppressHydrationWarning
-          onChange={(e) => updateIntro(e.target.value)}
-          maxLength={MAX_INTRO_LEN}
-          placeholder="e.g. night owl, here to chat about music"
-          className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none placeholder:text-muted focus:ring-1 focus:ring-ring"
-        />
-        <p className="mt-1 text-right text-xs text-muted">
-          {intro.length}/{MAX_INTRO_LEN} · shown to strangers when they hover your dot
+        <div className="mt-6 text-left">
+          <label htmlFor="intro" className="mb-1 block text-sm font-medium">
+            Introduce yourself{" "}
+            <span className="font-normal text-muted">(optional)</span>
+          </label>
+          <input
+            id="intro"
+            value={intro}
+            suppressHydrationWarning
+            onFocus={pulse}
+            onChange={(e) => updateIntro(e.target.value)}
+            maxLength={MAX_INTRO_LEN}
+            placeholder="e.g. night owl, here to chat about music"
+            className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none placeholder:text-muted focus:ring-1 focus:ring-ring"
+          />
+          <p className="mt-1 text-right text-xs text-muted">
+            {intro.length}/{MAX_INTRO_LEN} · shown to strangers on hover
+          </p>
+        </div>
+
+        <Button
+          onClick={enter}
+          disabled={status === "locating"}
+          className="mt-6 w-full px-8 py-3"
+        >
+          {status === "locating" ? "Locating…" : "Enter Pulse"}
+        </Button>
+
+        {status === "error" && (
+          <p className="mt-4 text-sm text-danger">{error}</p>
+        )}
+
+        <p className="mt-6 text-xs text-muted">
+          No sign-up. Your dot is placed 1–3&nbsp;km from your real location.
+          Nothing is stored — closing the tab ends everything.
         </p>
+        </motion.div>
       </div>
-
-      <Button onClick={enter} disabled={status === "locating"} className="px-8 py-3">
-        {status === "locating" ? "Locating…" : "Enter Pulse"}
-      </Button>
-
-      {status === "error" && (
-        <p className="max-w-sm text-center text-sm text-danger">{error}</p>
-      )}
-
-      <p className="max-w-sm text-center text-xs text-muted">
-        No sign-up. Your dot is placed 1–3&nbsp;km from your real location.
-        Nothing is stored — closing the tab ends everything.
-      </p>
     </div>
   );
 }

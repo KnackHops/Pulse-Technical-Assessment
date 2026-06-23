@@ -67,9 +67,9 @@ with a persisted toggle. Setup (user): `npm install motion`.
     `PeerDot.intro`. Shown on **peer-pin hover** (simple tooltip) **and** in the
     incoming-connect prompt (mobile/touch + pre-accept safety context). Setup: `npx prisma
     db push`.
-  - [ ] 2.2b Gate visual redesign — auto-rotating Mapbox globe (`projection: 'globe'`) behind
-    a frosted/translucent panel; emerald interaction pulse on focus/click; style the intro
-    input + locating state.
+  - [x] 2.2b Gate visual redesign — auto-rotating Mapbox globe (`projection: 'globe'`,
+    reduced-motion aware) behind a frosted/translucent panel; emerald edge-pulse on input
+    focus / button click; styled intro input + locating state.
 - [ ] 2.3 Map & dots (glow, busy state, animated join/leave; polished pin-declutter)
 - [ ] 2.4 Connection flow (animated modal + toasts)
 - [ ] 2.5 Chat panel polish
