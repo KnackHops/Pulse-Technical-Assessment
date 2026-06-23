@@ -5,6 +5,7 @@ export async function join(
   id: string,
   lat: number,
   lng: number,
+  intro?: string,
 ): Promise<void> {
   // fetch only rejects on network errors, not on HTTP 4xx/5xx — so check the
   // status explicitly. Without this a failed join (e.g. a 500) resolves
@@ -12,7 +13,7 @@ export async function join(
   const res = await fetch("/api/join", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id, lat, lng }),
+    body: JSON.stringify({ id, lat, lng, intro }),
   });
   if (!res.ok) throw new Error(`join failed: ${res.status}`);
 }

@@ -1,5 +1,8 @@
 // Shared types across client + API.
 
+// Max length of the optional "introduce yourself" blurb (enforced client + server).
+export const MAX_INTRO_LEN = 60;
+
 // Signal mailbox message types.
 export type SignalType =
   | "request" // connection request (tap a dot)
@@ -15,6 +18,7 @@ export interface PeerDot {
   lat: number;
   lng: number;
   busy: boolean;
+  intro: string | null;
 }
 
 export interface SignalMsg {

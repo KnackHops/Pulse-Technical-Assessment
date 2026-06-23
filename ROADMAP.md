@@ -56,9 +56,20 @@ with a persisted toggle. Setup (user): `npm install motion`.
     `EntryGate`, `ChatPanel`, `ConnectionPrompt`, `VideoPanel`, `WorldMap`, `page.tsx` pills
     with semantic tokens so the theme actually applies app-wide; move toggle to top-left so it
     doesn't collide with the connection pills. (Deep visual polish still in 2.2–2.6.)
-  - [ ] 2.1e Motion + primitives — wire `motion`; extract shared `Button`, `Modal`, `Toast`,
-    `Panel` so 2.2–2.6 reuse them.
-- [ ] 2.2 Entry gate redesign
+  - [x] 2.1e Motion + primitives — wired `motion`; shared `Button`/`Modal`/`Toast` in
+    `app/components/ui/`, adopted in ConnectionPrompt (animated modal), EntryGate, and the
+    notice toast. `Panel` lands with the chat polish in 2.5.
+- [ ] **2.2 Entry gate + "introduce yourself"**
+  - [x] 2.2a Introduce-yourself (core feature) — optional short intro (≤60 chars, plain text,
+    ephemeral on the presence row, nothing persisted server-side). Captured on the gate +
+    `sessionStorage` (prefill, clears on tab close). Plumbing: `Presence.intro` (Prisma) →
+    `join(id,lat,lng,intro)` (trim/cap/validate in `/api/join`) → `poll` returns it →
+    `PeerDot.intro`. Shown on **peer-pin hover** (simple tooltip) **and** in the
+    incoming-connect prompt (mobile/touch + pre-accept safety context). Setup: `npx prisma
+    db push`.
+  - [ ] 2.2b Gate visual redesign — auto-rotating Mapbox globe (`projection: 'globe'`) behind
+    a frosted/translucent panel; emerald interaction pulse on focus/click; style the intro
+    input + locating state.
 - [ ] 2.3 Map & dots (glow, busy state, animated join/leave; polished pin-declutter)
 - [ ] 2.4 Connection flow (animated modal + toasts)
 - [ ] 2.5 Chat panel polish

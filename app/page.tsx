@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { AnimatePresence } from "motion/react";
+import Toast from "./components/ui/Toast";
 import EntryGate from "./components/EntryGate";
 import WorldMap from "./components/WorldMap";
 import ConnectionPrompt from "./components/ConnectionPrompt";
@@ -303,12 +305,12 @@ export default function Home() {
     };
   }, [sessionId, phase]);
 
-  async function handleReady(lat: number, lng: number) {
+  async function handleReady(lat: number, lng: number, intro: string) {
     // Only go live once the join actually succeeds. If it throws, let it
     // propagate to EntryGate (which shows the error and stays on the gate) —
     // otherwise the user would appear "live" with no presence row: invisible
     // to everyone, with no indication anything went wrong.
-    await join(sessionId, lat, lng);
+    await join(sessionId, lat, lng, intro);
     setMyLocation({ lat, lng });
     setPhase("live");
   }
@@ -319,6 +321,13 @@ export default function Home() {
 
   const inChat = conn.kind === "connecting" || conn.kind === "connected";
 
+  // The intro of whoever is currently requesting a connection (if they set one)
+  // — shown in the prompt so you get a sense of the stranger before accepting.
+  const incomingIntro =
+    conn.kind === "incoming"
+      ? peers.find((p) => p.id === conn.peerId)?.intro ?? null
+      : null;
+
   return (
     <main className="fixed inset-0 overflow-hidden">
       <WorldMap
@@ -328,11 +337,9 @@ export default function Home() {
         canConnect={conn.kind === "idle"}
       />
 
-      {notice && (
-        <div className="absolute left-1/2 top-20 z-30 -translate-x-1/2 rounded-full border border-border bg-surface/90 px-4 py-2 text-sm text-foreground shadow-lg backdrop-blur">
-          {notice}
-        </div>
-      )}
+      <AnimatePresence>
+        {notice && <Toast key={notice} message={notice} />}
+      </AnimatePresence>
 
       {conn.kind === "requesting" && (
         <div className="absolute left-1/2 top-20 z-30 flex -translate-x-1/2 items-center gap-3 rounded-full border border-border bg-surface/90 px-4 py-2 text-sm text-foreground shadow-lg backdrop-blur">
@@ -346,15 +353,15 @@ export default function Home() {
         </div>
       )}
 
-      {conn.kind === "incoming" && (
-        <ConnectionPrompt
-          title="A stranger wants to connect"
-          acceptLabel="Accept"
-          declineLabel="Decline"
-          onAccept={acceptIncoming}
-          onDecline={declineIncoming}
-        />
-      )}
+      <ConnectionPrompt
+        open={conn.kind === "incoming"}
+        title="A stranger wants to connect"
+        subtitle={incomingIntro ? `“${incomingIntro}”` : undefined}
+        acceptLabel="Accept"
+        declineLabel="Decline"
+        onAccept={acceptIncoming}
+        onDecline={declineIncoming}
+      />
 
       {inChat && (
         <ChatPanel
@@ -376,16 +383,15 @@ export default function Home() {
         </div>
       )}
 
-      {video === "incoming" && (
-        <ConnectionPrompt
-          title="Start video call?"
-          subtitle="The stranger wants to turn on video."
-          acceptLabel="Accept"
-          declineLabel="Decline"
-          onAccept={acceptVideo}
-          onDecline={declineVideo}
-        />
-      )}
+      <ConnectionPrompt
+        open={video === "incoming"}
+        title="Start video call?"
+        subtitle="The stranger wants to turn on video."
+        acceptLabel="Accept"
+        declineLabel="Decline"
+        onAccept={acceptVideo}
+        onDecline={declineVideo}
+      />
 
       {video === "active" && (
         <VideoPanel

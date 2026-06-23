@@ -1,14 +1,39 @@
 "use client";
 
 import { useState } from "react";
+import Button from "./ui/Button";
+import { MAX_INTRO_LEN } from "@/lib/types";
+
+const INTRO_KEY = "pulse-intro";
 
 export default function EntryGate({
   onReady,
 }: {
-  onReady: (lat: number, lng: number) => void | Promise<void>;
+  onReady: (
+    lat: number,
+    lng: number,
+    intro: string,
+  ) => void | Promise<void>;
 }) {
   const [status, setStatus] = useState<"idle" | "locating" | "error">("idle");
   const [error, setError] = useState<string>("");
+  // Prefill from sessionStorage (survives refresh, clears on tab close — same
+  // ephemeral model as the theme + the privacy ethos).
+  const [intro, setIntro] = useState<string>(() => {
+    try {
+      return sessionStorage.getItem(INTRO_KEY) ?? "";
+    } catch {
+      return "";
+    }
+  });
+
+  function updateIntro(value: string) {
+    const next = value.slice(0, MAX_INTRO_LEN);
+    setIntro(next);
+    try {
+      sessionStorage.setItem(INTRO_KEY, next);
+    } catch {}
+  }
 
   function enter() {
     if (!("geolocation" in navigator)) {
@@ -22,7 +47,7 @@ export default function EntryGate({
         // onReady joins the server; if that fails, surface it and stay on the
         // gate instead of leaving the button stuck on "Locating…".
         Promise.resolve(
-          onReady(pos.coords.latitude, pos.coords.longitude),
+          onReady(pos.coords.latitude, pos.coords.longitude, intro),
         ).catch(() => {
           setStatus("error");
           setError("Couldn't reach the server. Check your connection and try again.");
@@ -51,13 +76,28 @@ export default function EntryGate({
         </p>
       </div>
 
-      <button
-        onClick={enter}
-        disabled={status === "locating"}
-        className="rounded-full bg-accent px-8 py-3 font-semibold text-accent-foreground transition hover:opacity-90 disabled:opacity-60"
-      >
+      <div className="w-full max-w-sm">
+        <label htmlFor="intro" className="mb-1 block text-sm font-medium">
+          Introduce yourself{" "}
+          <span className="font-normal text-muted">(optional)</span>
+        </label>
+        <input
+          id="intro"
+          value={intro}
+          suppressHydrationWarning
+          onChange={(e) => updateIntro(e.target.value)}
+          maxLength={MAX_INTRO_LEN}
+          placeholder="e.g. night owl, here to chat about music"
+          className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none placeholder:text-muted focus:ring-1 focus:ring-ring"
+        />
+        <p className="mt-1 text-right text-xs text-muted">
+          {intro.length}/{MAX_INTRO_LEN} · shown to strangers when they hover your dot
+        </p>
+      </div>
+
+      <Button onClick={enter} disabled={status === "locating"} className="px-8 py-3">
         {status === "locating" ? "Locating…" : "Enter Pulse"}
-      </button>
+      </Button>
 
       {status === "error" && (
         <p className="max-w-sm text-center text-sm text-danger">{error}</p>

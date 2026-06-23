@@ -1,8 +1,13 @@
 "use client";
 
+import Modal from "./ui/Modal";
+import Button from "./ui/Button";
+
 // Reusable centered prompt for "someone wants to connect" and
-// "someone wants to start video".
+// "someone wants to start video". Rendered always-mounted and driven by `open`
+// so the close animation can play.
 export default function ConnectionPrompt({
+  open,
   title,
   subtitle,
   acceptLabel,
@@ -10,6 +15,7 @@ export default function ConnectionPrompt({
   onAccept,
   onDecline,
 }: {
+  open: boolean;
   title: string;
   subtitle?: string;
   acceptLabel: string;
@@ -18,25 +24,17 @@ export default function ConnectionPrompt({
   onDecline: () => void;
 }) {
   return (
-    <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 p-6">
-      <div className="w-full max-w-xs rounded-2xl bg-surface p-6 text-center text-foreground shadow-xl">
-        <h2 className="text-lg font-semibold">{title}</h2>
-        {subtitle && <p className="mt-1 text-sm text-muted">{subtitle}</p>}
-        <div className="mt-5 flex gap-3">
-          <button
-            onClick={onDecline}
-            className="flex-1 rounded-full border border-border px-4 py-2 text-sm font-medium text-muted hover:bg-surface-2"
-          >
-            {declineLabel}
-          </button>
-          <button
-            onClick={onAccept}
-            className="flex-1 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground hover:opacity-90"
-          >
-            {acceptLabel}
-          </button>
-        </div>
+    <Modal open={open} onClose={onDecline}>
+      <h2 className="text-lg font-semibold">{title}</h2>
+      {subtitle && <p className="mt-1 text-sm text-muted">{subtitle}</p>}
+      <div className="mt-5 flex gap-3">
+        <Button variant="outline" size="sm" className="flex-1" onClick={onDecline}>
+          {declineLabel}
+        </Button>
+        <Button variant="accent" size="sm" className="flex-1" onClick={onAccept}>
+          {acceptLabel}
+        </Button>
       </div>
-    </div>
+    </Modal>
   );
 }

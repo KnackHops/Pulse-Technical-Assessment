@@ -144,7 +144,6 @@ export default function WorldMap({
           const el = document.createElement("button");
           el.className = "pulse-dot";
           el.style.background = dotColor(peer.id);
-          el.title = "Tap to connect";
           el.addEventListener("click", (e) => {
             e.stopPropagation();
             if (canConnectRef.current) onPeerClickRef.current(peer.id);
@@ -154,7 +153,11 @@ export default function WorldMap({
             .addTo(map);
           markers.set(peer.id, marker);
         }
-        marker.getElement().style.opacity = peer.busy ? "0.35" : "1";
+        // Updated every pass (not just on create) since intro/busy can change.
+        const el = marker.getElement();
+        el.style.opacity = peer.busy ? "0.35" : "1";
+        // Native tooltip on hover shows the peer's intro (2.2b prettifies this).
+        el.title = peer.intro?.trim() ? peer.intro : "Tap to connect";
       }
 
       // Drop markers for peers that went offline / got filtered out.
