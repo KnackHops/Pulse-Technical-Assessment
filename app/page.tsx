@@ -31,6 +31,7 @@ export default function Home() {
   const [peers, setPeers] = useState<PeerDot[]>([]);
   const [gateCount, setGateCount] = useState(0);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [peerTyping, setPeerTyping] = useState(false);
   const [notice, setNotice] = useState<{ text: string; variant: ToastVariant } | null>(
     null,
   );
@@ -57,6 +58,16 @@ export default function Home() {
   const peerRef = useRef<PeerSession | null>(null);
   const msgId = useRef(0);
   const requestTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Safety net: clear the typing indicator if a "typing-stop" never arrives.
+  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function setPeerTypingSafe(on: boolean) {
+    if (typingTimer.current) clearTimeout(typingTimer.current);
+    setPeerTyping(on);
+    if (on) {
+      typingTimer.current = setTimeout(() => setPeerTyping(false), 5000);
+    }
+  }
 
   function showNotice(text: string, variant: ToastVariant = "info") {
     setNotice({ text, variant });
@@ -69,12 +80,14 @@ export default function Home() {
 
   function teardown(message?: string, variant: ToastVariant = "info") {
     if (requestTimer.current) clearTimeout(requestTimer.current);
+    if (typingTimer.current) clearTimeout(typingTimer.current);
     peerRef.current?.close();
     peerRef.current = null;
     setLocalStream(null);
     setRemoteStream(null);
     setVideo("none");
     setMessages([]);
+    setPeerTyping(false);
     setConn({ kind: "idle" });
     if (message) showNotice(message, variant);
   }
@@ -84,7 +97,10 @@ export default function Home() {
       onSignal: (type: DescType, payload: string) => {
         void sendSignal(sessionId, peerId, type, payload);
       },
-      onChat: (text) => addMessage(false, text),
+      onChat: (text) => {
+        setPeerTypingSafe(false);
+        addMessage(false, text);
+      },
       onControl: (ctrl) => handleControl(ctrl),
       onRemoteStream: (stream) => setRemoteStream(stream),
       onConnectionState: (state) => {
@@ -110,6 +126,12 @@ export default function Home() {
   function handleControl(ctrl: PeerControl) {
     const ps = peerRef.current;
     switch (ctrl) {
+      case "typing-start":
+        setPeerTypingSafe(true);
+        break;
+      case "typing-stop":
+        setPeerTypingSafe(false);
+        break;
       case "video-request":
         if (videoRef.current === "none") setVideo("incoming");
         break;
@@ -375,14 +397,17 @@ export default function Home() {
     return <EntryGate onReady={handleReady} onlineCount={gateCount} />;
   }
 
-  const inChat = conn.kind === "connecting" || conn.kind === "connected";
-
   // The intro of whoever is currently requesting a connection (if they set one)
   // — shown in the prompt so you get a sense of the stranger before accepting.
   const incomingIntro =
     conn.kind === "incoming"
       ? peers.find((p) => p.id === conn.peerId)?.intro ?? null
       : null;
+
+  // The peer we're actively connected to (for the chat/video identity overlays).
+  const activePeerId = conn.kind === "idle" ? null : conn.peerId;
+  const activePeerIntro =
+    peers.find((p) => p.id === activePeerId)?.intro ?? null;
 
   return (
     <main className="fixed inset-0 overflow-hidden">
@@ -422,19 +447,27 @@ export default function Home() {
         onDecline={declineIncoming}
       />
 
-      {inChat && (
-        <ChatPanel
-          messages={messages}
-          connected={conn.kind === "connected"}
-          videoBusy={video !== "none"}
-          onSend={(text) => {
-            peerRef.current?.sendChat(text);
-            addMessage(true, text);
-          }}
-          onStartVideo={startVideoRequest}
-          onEnd={endConnection}
-        />
-      )}
+      <AnimatePresence>
+        {(conn.kind === "connecting" || conn.kind === "connected") && (
+          <ChatPanel
+            messages={messages}
+            connected={conn.kind === "connected"}
+            videoBusy={video !== "none"}
+            peerId={conn.peerId}
+            peerIntro={peers.find((p) => p.id === conn.peerId)?.intro ?? null}
+            peerTyping={peerTyping}
+            onSend={(text) => {
+              peerRef.current?.sendChat(text);
+              addMessage(true, text);
+            }}
+            onTyping={(t) =>
+              peerRef.current?.sendControl(t ? "typing-start" : "typing-stop")
+            }
+            onStartVideo={startVideoRequest}
+            onEnd={endConnection}
+          />
+        )}
+      </AnimatePresence>
 
       {video === "requesting" && (
         <div className="absolute bottom-24 left-1/2 z-30 -translate-x-1/2 rounded-full border border-border bg-surface/90 px-4 py-2 text-sm text-foreground shadow-lg backdrop-blur">
@@ -452,13 +485,17 @@ export default function Home() {
         onDecline={declineVideo}
       />
 
-      {video === "active" && (
-        <VideoPanel
-          localStream={localStream}
-          remoteStream={remoteStream}
-          onEnd={endVideo}
-        />
-      )}
+      <AnimatePresence>
+        {video === "active" && (
+          <VideoPanel
+            localStream={localStream}
+            remoteStream={remoteStream}
+            peerId={activePeerId ?? ""}
+            peerIntro={activePeerIntro}
+            onEnd={endVideo}
+          />
+        )}
+      </AnimatePresence>
     </main>
   );
 }

@@ -89,8 +89,18 @@ with a persisted toggle. Setup (user): `npm install motion`.
   (declined/disconnected/failed/camera → danger, "Connected" flash → success); clicking a
   busy/locked dot (or one while mid-connection) now explains itself via a toast instead of
   doing nothing; gate errors routed through the same danger `Toast`.
-- [ ] 2.5 Chat panel polish
-- [ ] 2.6 Video panel polish (control bar, mic/cam toggles, end-call, chat-during-video)
+- [x] **2.5 Chat panel polish** — reusable `ui/Panel` slide-in shell (caller-driven via
+  `AnimatePresence`; reduced-motion fades); header shows the peer's hue dot + intro (was a
+  generic "Stranger"); message bubbles animate in + group consecutive same-sender messages
+  (single tail per group); live **typing indicator** over the data channel
+  (`typing-start`/`typing-stop` `PeerControl`, debounced emit, 5s safety clear, reduced-motion
+  shows static "typing…").
+- [x] **2.6 Video panel polish (UI only)** — animated overlay (fade/scale in-out via
+  `AnimatePresence`); full-bleed remote with floating overlays (controls can't be pushed
+  off-screen — structural hardening of the 1.5 fix); **mirrored** self-view PiP; peer identity
+  pill (hue dot + intro, matches chat/cards); spinner + name waiting state; "End video" via the
+  danger `Button` over a scrim. (Functional controls — mute mic, stop camera, leave-call,
+  chat-during-video — are new capability → moved to **4.2**.)
 - [ ] 2.7 Responsive + a11y pass (reduced-motion, focus-visible)
 
 ## Phase 3 — Make it secure — *sketch*
@@ -111,7 +121,10 @@ Feature: **"Introduce yourself"** (moved here from Phase 2 — this is the grade
   `join(id,lat,lng,intro)` (trim/cap/validate in `/api/join`) → `poll` returns it →
   `PeerDot.intro`. Shown on **peer-pin hover** **and** in the incoming-connect prompt
   (mobile/touch + pre-accept safety context). Setup: `npx prisma db push`.
-- [ ] 4.2 Optional extensions (TBD) — richer hover card, edit intro while live, and/or a
+- [ ] 4.2 Video call controls (moved from 2.6) — **mute mic** + **stop camera** (toggle
+  `track.enabled`), **leave call** (vs end-video), **chat during video**. New capability on top of
+  the existing video feature.
+- [ ] 4.3 Optional extensions (TBD) — richer hover card, edit intro while live, and/or a
   lightweight **safety** affordance (block/disconnect); possible add: connection **ripples**.
 
 ---
