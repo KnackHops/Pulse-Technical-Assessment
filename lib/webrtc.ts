@@ -16,8 +16,24 @@ interface PeerCallbacks {
   onChannelOpen: () => void;
 }
 
+// STUN discovers each peer's public address (good enough on friendly NATs).
+// TURN relays the media when a direct path can't be punched — needed for peers
+// on different networks or behind symmetric NAT (otherwise ICE finds no working
+// candidate pair → "Connection failed"). Open Relay is a free public TURN; fine
+// for a demo, swap for Twilio / self-hosted coturn in production.
 const ICE_CONFIG: RTCConfiguration = {
-  iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" },
+    {
+      urls: [
+        "turn:openrelay.metered.ca:80",
+        "turn:openrelay.metered.ca:443",
+        "turn:openrelay.metered.ca:443?transport=tcp",
+      ],
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+  ],
 };
 
 export class PeerSession {
