@@ -11,6 +11,9 @@ I first did a rundown checkup using claude of what was obviously broken. Then I 
 The only two that the agent missed is sub phase 1.5 and 1.6 it seems. regarding video controls being pushed off of the screen and busy problem in abrupt disconnect. Other than that everything seems to have been seen. I will come back to this as I play around even more. As I'm bound to see one or two more that I missed.
 
 Also decided to deploy for video call testing.
+
+Last Edit: Encountered cross-network connection failures as I was building up phase 3. Managed to fix it via TURN relay
+
 ---
 
 ## Phase 2 — Make it good
