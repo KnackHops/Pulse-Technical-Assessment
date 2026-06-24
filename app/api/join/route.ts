@@ -2,7 +2,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { applyPrivacyOffset, isValidLatLng } from "@/lib/geo";
 import { MAX_INTRO_LEN } from "@/lib/types";
-import { SESSION_COOKIE, signSession, cookieOptions } from "@/lib/session";
+import {
+  SESSION_COOKIE,
+  signSession,
+  cookieOptions,
+  isValidSessionId,
+} from "@/lib/session";
 import { rateLimit, tooManyRequests, clientIp } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
@@ -34,7 +39,7 @@ export async function POST(request: NextRequest) {
 
   const { id, lat, lng, intro } = (body ?? {}) as Record<string, unknown>;
 
-  if (typeof id !== "string" || id.length < 8 || id.length > 64) {
+  if (!isValidSessionId(id)) {
     return Response.json({ error: "invalid id" }, { status: 400 });
   }
   if (!isValidLatLng(lat, lng)) {

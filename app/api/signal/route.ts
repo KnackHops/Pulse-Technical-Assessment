@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import type { SignalType } from "@/lib/types";
-import { readSession } from "@/lib/session";
+import { readSession, isValidSessionId } from "@/lib/session";
 import { rateLimit, tooManyRequests } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
@@ -19,6 +19,11 @@ const VALID_TYPES: SignalType[] = [
 
 const MAX_PAYLOAD = 64 * 1024; // SDP/ICE are small; cap to be safe.
 
+// Backstop against mailbox flooding. A connected peer drains its mailbox every
+// ~1.5s poll, so a healthy mailbox is near-empty; this caps total accumulation
+// (rate-limiting caps the per-second rate, this caps the standing depth).
+const MAX_MAILBOX = 50;
+
 // POST /api/signal — body { fromId, toId, type, payload? }
 // Drops one message into the recipient's mailbox. Also manages the `busy`
 // flag so a user can only be in one connection at a time.
@@ -35,8 +40,11 @@ export async function POST(request: NextRequest) {
     unknown
   >;
 
-  if (typeof fromId !== "string" || typeof toId !== "string") {
+  if (!isValidSessionId(fromId) || !isValidSessionId(toId)) {
     return Response.json({ error: "invalid ids" }, { status: 400 });
+  }
+  if (fromId === toId) {
+    return Response.json({ error: "cannot signal self" }, { status: 400 });
   }
   // The sender must be who they claim — kills spoofed offers/answers (MITM).
   // `toId` stays free: you may signal anyone.
@@ -96,6 +104,12 @@ export async function POST(request: NextRequest) {
       where: { id: { in: [fromId, toId] } },
       data: { busy: false, peerId: null },
     });
+  }
+
+  // Refuse to pile onto a recipient whose mailbox is already saturated.
+  const pending = await prisma.signal.count({ where: { toId } });
+  if (pending >= MAX_MAILBOX) {
+    return Response.json({ error: "recipient mailbox full" }, { status: 429 });
   }
 
   await prisma.signal.create({

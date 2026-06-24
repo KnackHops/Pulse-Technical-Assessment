@@ -10,6 +10,15 @@ import type { NextRequest } from "next/server";
 
 export const SESSION_COOKIE = "pulse_session";
 
+// Session ids are client-minted UUIDs (crypto.randomUUID in page.tsx). Validate
+// the shape so malformed/garbage ids are rejected before any DB query — shared
+// across all routes.
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export function isValidSessionId(x: unknown): x is string {
+  return typeof x === "string" && UUID_RE.test(x);
+}
+
 // Read lazily (not at import) so build/lint don't require the env to be set;
 // a request without the secret fails loudly with a clear 500 instead.
 function getSecret(): string {

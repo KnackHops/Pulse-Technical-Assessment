@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { STALE_MS, SIGNAL_TTL_MS } from "@/lib/presence";
 import type { PollResponse } from "@/lib/types";
-import { readSession } from "@/lib/session";
+import { readSession, isValidSessionId } from "@/lib/session";
 import { rateLimit, tooManyRequests } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
@@ -17,6 +17,9 @@ export async function GET(request: NextRequest) {
 
   if (!id) {
     return Response.json({ error: "missing id" }, { status: 400 });
+  }
+  if (!isValidSessionId(id)) {
+    return Response.json({ error: "invalid id" }, { status: 400 });
   }
   // Only the client that joined as `id` may read its mailbox.
   if (readSession(request) !== id) {
