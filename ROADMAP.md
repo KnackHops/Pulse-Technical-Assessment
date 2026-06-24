@@ -38,6 +38,14 @@ Three confirmed end-to-end breakers + hardening + a verification pass.
   `busy` (no server-side pairing), so the survivor stays locked forever. Fix in `app/page.tsx`:
   the poll tick detects when a connected/connecting peer vanishes from `peers` → sends `end`
   (frees own busy) + tears down; also frees busy on a WebRTC `failed` state.
+- [x] **1.7 — Cross-network connections fail (no TURN).** Found in testing: same-network peers
+  (laptop ↔ phone on one Wi-Fi) connected, but peers on **different networks** failed — accepter
+  saw "Connection failed (network)", requester saw "Stranger disconnected" (one ICE failure
+  surfacing on both sides). Signaling was fine; ICE only ever produced `host` + `srflx`
+  candidates, never `relay`. Root cause: `lib/webrtc.ts` used **STUN only**, so symmetric/
+  restrictive NATs had no relay fallback. Fix: add a **TURN** server, creds via
+  `NEXT_PUBLIC_TURN_*` env (swappable per deploy, not hardcoded). After deploy a `relay`
+  candidate appears and cross-network calls connect.
 - [ ] **1.4 — Two-browser verification pass.** See each other → connect → chat both ways →
   video → end video → end → close tab → dot gone ≤15s. Log any new bug as a 1.x item.
 
@@ -127,19 +135,26 @@ model). Each sub-phase = one commit; the "why" is explained before each.
 > encryption is needed — **3.1 closes the only real chat threat (signaling MITM)** by binding
 > `fromId`. A *visible* "verify"/safety-number feature is parked in 4.3.
 
-- [ ] 3.1 (P0) **Identity binding** — **signed (HMAC) httpOnly session cookie** bound to the
+- [x] 3.1 (P0) **Identity binding** — **signed (HMAC) httpOnly session cookie** bound to the
   session id. `lib/session.ts` (`signSession`/`readSession`, `SESSION_SECRET` env); `join` sets
   it, `poll`/`signal`/`leave` verify (`403` on mismatch). **No DB migration** (signed cookie,
   no column) — only a `SESSION_SECRET` env var (user setup). Session cookie (no expiry) → gone
   on tab close, same lifetime as the `sessionStorage` theme/intro.
-- [ ] 3.2 (P0) **Rate limiting** — in-memory fixed-window limiter (`lib/rateLimit.ts`) keyed by
-  session id (IP fallback for `join`); `429` + `Retry-After`. Note: per-lambda on Vercel =
-  best-effort; Upstash Redis is the prod swap (infra, out of code scope).
-- [ ] 3.3 (P1) **Input hardening** — reject `fromId === toId`; validate id shape (UUID) on every
-  route; cap pending signals per `toId` (mailbox flood); keep type whitelist + 64 KB payload cap.
-- [ ] 3.4 (P2) **Security headers / CORS / error hygiene** — `middleware.ts`: CSP (Mapbox-aware +
-  hash the inline theme script), `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`,
-  HSTS (prod); same-origin `Origin` check on API; generic error bodies (no stack/Prisma leak).
+  - [x] 3.1-fix — gate's pre-join "N online" counter polled the now-authed `poll` → `403`. Split
+    the public part into **`GET /api/online`** (bare non-stale count, no auth/side-effects);
+    gate uses `onlineCount()` instead of `poll`.
+- [x] 3.2 (P0) **Rate limiting** — in-memory fixed-window limiter (`lib/rateLimit.ts`) keyed by
+  session id (IP fallback for `join`/`online`); `429` + `Retry-After`. Note: per-lambda on
+  Vercel = best-effort; Upstash Redis is the prod swap (infra, out of code scope).
+- [x] 3.3 (P1) **Input hardening** — reject `fromId === toId`; `isValidSessionId` (UUID) on every
+  route; cap pending signals per `toId` (`MAX_MAILBOX`, mailbox flood); kept type whitelist +
+  64 KB payload cap.
+- [x] 3.4 (P2) **Security headers / CORS / error hygiene** — `middleware.ts`: **nonce-based CSP**
+  (Mapbox-aware: blob workers + `*.mapbox.com`, `style-src 'unsafe-inline'` for motion; inline
+  theme script carries the nonce; dev relaxes `unsafe-eval`/ws for HMR), `X-Frame-Options: DENY`,
+  `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` (camera/mic/geo=self), HSTS
+  (prod); same-origin `Origin` check on API; routes return generic error bodies (Next scrubs
+  stack/Prisma in prod).
 
 ## Phase 4 — Make it better (new feature)
 
