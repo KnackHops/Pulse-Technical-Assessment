@@ -28,7 +28,7 @@ export default function ConnectionPrompt({
   onDecline: () => void;
 }) {
   return (
-    <Modal open={open} onClose={onDecline}>
+    <Modal open={open} onClose={onDecline} label={title}>
       {dotId && (
         <span
           aria-hidden

@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import type { ComponentPropsWithoutRef } from "react";
 
 type Variant = "accent" | "danger" | "outline" | "ghost";
-type Size = "sm" | "md";
+type Size = "sm" | "md" | "icon";
 
 const base =
   "inline-flex items-center justify-center rounded-full font-semibold transition disabled:opacity-50 disabled:pointer-events-none focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
@@ -19,6 +19,7 @@ const variants: Record<Variant, string> = {
 const sizes: Record<Size, string> = {
   sm: "px-3 py-1.5 text-sm",
   md: "px-6 py-2.5 text-sm",
+  icon: "h-11 w-11 p-0",
 };
 
 export default function Button({

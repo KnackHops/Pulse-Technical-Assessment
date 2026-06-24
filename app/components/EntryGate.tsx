@@ -119,7 +119,7 @@ export default function EntryGate({
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className="relative w-full max-w-sm rounded-3xl border border-border bg-surface/70 p-8 text-center shadow-2xl backdrop-blur-xl"
+        className="relative w-full max-w-sm rounded-3xl border border-border bg-surface/70 p-6 text-center shadow-2xl backdrop-blur-xl sm:p-8"
       >
         {/* Emerald edge-pulse, replayed on each interaction via the key. */}
         <motion.span

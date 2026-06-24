@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import Panel from "./ui/Panel";
+import Button from "./ui/Button";
 import { hueCss } from "@/lib/hue";
 
 export interface ChatMessage {
@@ -17,23 +18,27 @@ export default function ChatPanel({
   messages,
   connected,
   videoBusy,
+  inVideo,
   peerId,
   peerIntro,
   peerTyping,
   onSend,
   onTyping,
   onStartVideo,
+  onEndVideo,
   onEnd,
 }: {
   messages: ChatMessage[];
   connected: boolean;
   videoBusy: boolean;
+  inVideo: boolean;
   peerId: string;
   peerIntro: string | null;
   peerTyping: boolean;
   onSend: (text: string) => void;
   onTyping: (typing: boolean) => void;
   onStartVideo: () => void;
+  onEndVideo: () => void;
   onEnd: () => void;
 }) {
   const [draft, setDraft] = useState("");
@@ -102,19 +107,25 @@ export default function ChatPanel({
           </div>
         </div>
         <div className="flex shrink-0 gap-2">
-          <button
-            onClick={onStartVideo}
-            disabled={!connected || videoBusy}
-            className="rounded-full border border-border px-3 py-1.5 text-sm hover:bg-surface-2 disabled:opacity-40"
-          >
-            Video
-          </button>
-          <button
-            onClick={onEnd}
-            className="rounded-full bg-danger px-3 py-1.5 text-sm font-medium text-danger-foreground hover:opacity-90"
-          >
+          {inVideo ? (
+            // During a call this ends the video (same as the video bar's button) —
+            // reachable even when the chat is full-screen on mobile.
+            <Button variant="outline" size="sm" onClick={onEndVideo}>
+              End Video
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onStartVideo}
+              disabled={!connected || videoBusy}
+            >
+              Video
+            </Button>
+          )}
+          <Button variant="danger" size="sm" onClick={onEnd}>
             End
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -184,17 +195,14 @@ export default function ChatPanel({
         <input
           value={draft}
           onChange={(e) => changeDraft(e.target.value)}
+          aria-label="Message"
           placeholder={connected ? "Type a message…" : "Connecting…"}
           disabled={!connected}
-          className="flex-1 rounded-full bg-surface-2 px-4 py-2 text-sm outline-none placeholder:text-muted focus:ring-1 focus:ring-ring disabled:opacity-50"
+          className="flex-1 rounded-full bg-surface-2 px-4 py-2 text-sm outline-none placeholder:text-muted focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
         />
-        <button
-          type="submit"
-          disabled={!connected || !draft.trim()}
-          className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground disabled:opacity-40"
-        >
+        <Button type="submit" variant="accent" disabled={!connected || !draft.trim()}>
           Send
-        </button>
+        </Button>
       </form>
     </Panel>
   );

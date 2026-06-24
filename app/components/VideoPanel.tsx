@@ -10,12 +10,16 @@ export default function VideoPanel({
   remoteStream,
   peerId,
   peerIntro,
+  chatOpen,
+  onToggleChat,
   onEnd,
 }: {
   localStream: MediaStream | null;
   remoteStream: MediaStream | null;
   peerId: string;
   peerIntro: string | null;
+  chatOpen: boolean;
+  onToggleChat: () => void;
   onEnd: () => void;
 }) {
   const localRef = useRef<HTMLVideoElement>(null);
@@ -41,15 +45,19 @@ export default function VideoPanel({
       animate={{ opacity: 1, scale: 1 }}
       exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 1.03 }}
       transition={{ duration: 0.25, ease: "easeOut" }}
-      className="absolute inset-0 z-30 overflow-hidden bg-background"
+      className={`fixed inset-0 z-30 overflow-hidden bg-background transition-[right] duration-300 ${
+        chatOpen ? "md:right-[28rem]" : ""
+      }`}
     >
-      {/* Remote, full-bleed. Overlays float on top, so the video's intrinsic
-          size can never push the controls off-screen (the 1.5 fix, structural). */}
+      {/* Remote feed at its true aspect ratio (object-contain → letterboxed on
+          the dark bg), so a portrait/phone caller isn't cropped. Overlays float
+          on top, so the video can never push the controls off-screen (1.5 fix). */}
       <video
         ref={remoteRef}
         autoPlay
         playsInline
-        className="absolute inset-0 h-full w-full bg-surface-2 object-cover"
+        aria-label={`${name}'s video`}
+        className="absolute inset-0 h-full w-full bg-surface-2 object-contain"
       />
 
       {!remoteStream && (
@@ -80,13 +88,51 @@ export default function VideoPanel({
         autoPlay
         playsInline
         muted
+        aria-label="Your video"
         className="absolute bottom-24 right-4 h-[120px] w-[120px] -scale-x-100 rounded-lg border border-border bg-surface-2 object-cover shadow-lg sm:h-[140px] sm:w-[140px]"
       />
 
       {/* Control bar over a scrim so buttons stay legible on bright video. */}
-      <div className="absolute inset-x-0 bottom-0 flex justify-center bg-gradient-to-t from-black/60 to-transparent px-4 pb-6 pt-12">
-        <Button variant="danger" onClick={onEnd} className="px-8 py-3">
-          End video
+      <div className="absolute inset-x-0 bottom-0 flex justify-center gap-4 bg-gradient-to-t from-black/60 to-transparent px-4 pb-6 pt-12">
+        <Button
+          variant="accent"
+          size="icon"
+          onClick={onToggleChat}
+          aria-label={chatOpen ? "Hide chat" : "Show chat"}
+          title={chatOpen ? "Hide chat" : "Show chat"}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-5 w-5"
+            aria-hidden="true"
+          >
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+          </svg>
+        </Button>
+        <Button
+          variant="danger"
+          size="icon"
+          onClick={onEnd}
+          aria-label="End video"
+          title="End video"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-5 w-5"
+            aria-hidden="true"
+          >
+            <path d="m16 16 6 4V8l-6 4M16 16V8a2 2 0 0 0-2-2H8m8 10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8M2 2l20 20" />
+          </svg>
         </Button>
       </div>
     </motion.div>

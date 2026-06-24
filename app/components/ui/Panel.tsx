@@ -25,7 +25,7 @@ export default function Panel({
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: offscreen, opacity: reduce ? 0 : 1 }}
       transition={{ type: "spring", stiffness: 320, damping: 34 }}
-      className={`absolute z-20 flex flex-col border-border bg-surface text-foreground shadow-2xl ${edge} ${className}`}
+      className={`fixed z-30 flex flex-col border-border bg-surface text-foreground shadow-2xl ${edge} ${className}`}
     >
       {children}
     </motion.aside>

@@ -9,6 +9,7 @@ import ConnectionPrompt from "./components/ConnectionPrompt";
 import RequestingCard from "./components/RequestingCard";
 import ChatPanel, { type ChatMessage } from "./components/ChatPanel";
 import VideoPanel from "./components/VideoPanel";
+import Portal from "./components/ui/Portal";
 import { join, leave, poll, sendSignal } from "@/lib/api";
 import { PeerSession, type DescType, type PeerControl } from "@/lib/webrtc";
 import { POLL_INTERVAL_MS } from "@/lib/presence";
@@ -32,6 +33,9 @@ export default function Home() {
   const [gateCount, setGateCount] = useState(0);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [peerTyping, setPeerTyping] = useState(false);
+  // Whether the chat panel is shown while a video call is active (closed by
+  // default; toggled from the video control bar).
+  const [chatInVideo, setChatInVideo] = useState(false);
   const [notice, setNotice] = useState<{ text: string; variant: ToastVariant } | null>(
     null,
   );
@@ -86,6 +90,7 @@ export default function Home() {
     setLocalStream(null);
     setRemoteStream(null);
     setVideo("none");
+    setChatInVideo(false);
     setMessages([]);
     setPeerTyping(false);
     setConn({ kind: "idle" });
@@ -160,6 +165,7 @@ export default function Home() {
         setLocalStream(null);
         setRemoteStream(null);
         setVideo("none");
+        setChatInVideo(false);
         break;
     }
   }
@@ -249,6 +255,7 @@ export default function Home() {
     setLocalStream(null);
     setRemoteStream(null);
     setVideo("none");
+    setChatInVideo(false);
   }
 
   function processSignal(sig: SignalMsg) {
@@ -383,6 +390,18 @@ export default function Home() {
     };
   }, [phase, sessionId]);
 
+  // Flag the root while a full-screen overlay (chat or video) is up, so CSS can
+  // hide the global theme toggle on mobile where the overlay covers it.
+  useEffect(() => {
+    const overlay =
+      conn.kind === "connecting" ||
+      conn.kind === "connected" ||
+      video === "active";
+    const root = document.documentElement;
+    root.classList.toggle("pulse-overlay", overlay);
+    return () => root.classList.remove("pulse-overlay");
+  }, [conn, video]);
+
   async function handleReady(lat: number, lng: number, intro: string) {
     // Only go live once the join actually succeeds. If it throws, let it
     // propagate to EntryGate (which shows the error and stays on the gate) —
@@ -447,27 +466,49 @@ export default function Home() {
         onDecline={declineIncoming}
       />
 
-      <AnimatePresence>
-        {(conn.kind === "connecting" || conn.kind === "connected") && (
-          <ChatPanel
-            messages={messages}
-            connected={conn.kind === "connected"}
-            videoBusy={video !== "none"}
-            peerId={conn.peerId}
-            peerIntro={peers.find((p) => p.id === conn.peerId)?.intro ?? null}
-            peerTyping={peerTyping}
-            onSend={(text) => {
-              peerRef.current?.sendChat(text);
-              addMessage(true, text);
-            }}
-            onTyping={(t) =>
-              peerRef.current?.sendControl(t ? "typing-start" : "typing-stop")
-            }
-            onStartVideo={startVideoRequest}
-            onEnd={endConnection}
-          />
-        )}
-      </AnimatePresence>
+      {/* Call surface (video + chat) portaled onto <body>, outside <main>, so the
+          chat slide can't re-raster the Mapbox canvas. Video first, chat after, so
+          chat stacks above the video on mobile (full-screen) and sits beside it on
+          desktop (video shrinks via md:right-[28rem]). */}
+      <Portal>
+        <AnimatePresence>
+          {video === "active" && (
+            <VideoPanel
+              localStream={localStream}
+              remoteStream={remoteStream}
+              peerId={activePeerId ?? ""}
+              peerIntro={activePeerIntro}
+              chatOpen={chatInVideo}
+              onToggleChat={() => setChatInVideo((v) => !v)}
+              onEnd={endVideo}
+            />
+          )}
+        </AnimatePresence>
+        <AnimatePresence>
+          {(conn.kind === "connecting" || conn.kind === "connected") &&
+            (video !== "active" || chatInVideo) && (
+              <ChatPanel
+                messages={messages}
+                connected={conn.kind === "connected"}
+                videoBusy={video !== "none"}
+                inVideo={video === "active"}
+                peerId={conn.peerId}
+                peerIntro={peers.find((p) => p.id === conn.peerId)?.intro ?? null}
+                peerTyping={peerTyping}
+                onSend={(text) => {
+                  peerRef.current?.sendChat(text);
+                  addMessage(true, text);
+                }}
+                onTyping={(t) =>
+                  peerRef.current?.sendControl(t ? "typing-start" : "typing-stop")
+                }
+                onStartVideo={startVideoRequest}
+                onEndVideo={endVideo}
+                onEnd={endConnection}
+              />
+            )}
+        </AnimatePresence>
+      </Portal>
 
       {video === "requesting" && (
         <div className="absolute bottom-24 left-1/2 z-30 -translate-x-1/2 rounded-full border border-border bg-surface/90 px-4 py-2 text-sm text-foreground shadow-lg backdrop-blur">
@@ -485,17 +526,6 @@ export default function Home() {
         onDecline={declineVideo}
       />
 
-      <AnimatePresence>
-        {video === "active" && (
-          <VideoPanel
-            localStream={localStream}
-            remoteStream={remoteStream}
-            peerId={activePeerId ?? ""}
-            peerIntro={activePeerIntro}
-            onEnd={endVideo}
-          />
-        )}
-      </AnimatePresence>
     </main>
   );
 }

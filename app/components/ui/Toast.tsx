@@ -25,6 +25,8 @@ export default function Toast({
 }) {
   return (
     <motion.div
+      role={variant === "danger" ? "alert" : "status"}
+      aria-live={variant === "danger" ? "assertive" : "polite"}
       initial={{ opacity: 0, y: -8, x: "-50%" }}
       animate={{ opacity: 1, y: 0, x: "-50%" }}
       exit={{ opacity: 0, y: -8, x: "-50%" }}

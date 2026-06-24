@@ -116,6 +116,12 @@ export default function WorldMap({
         center: me ? [me.lng, me.lat] : [0, 20],
         zoom: me ? 4 : 1.4,
         attributionControl: true,
+        // Don't auto-resize off the container's ResizeObserver — a transient
+        // reflow during the chat-panel slide would briefly narrow the canvas and
+        // Mapbox would re-fit (keeping center), making the map drift sideways.
+        // The container is always inset-0, so the only real size change is the
+        // viewport — handled by the window-resize effect below.
+        trackResize: false,
       });
       map.on("load", () => {
         if (!cancelled) setReady(true);
@@ -137,6 +143,15 @@ export default function WorldMap({
     // change (theme swaps go through setStyle below, recenters are not wanted).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // With trackResize off, resize the map only on real viewport changes.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    const onResize = () => map.resize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [ready]);
 
   // Swap the basemap when the theme toggles. Markers are separate DOM overlays,
   // so they persist across setStyle — no need to re-add them.
@@ -266,7 +281,11 @@ export default function WorldMap({
   }, [ready, declutter]);
 
   return (
-    <div className="absolute inset-0">
+    // willChange promotes the map to its own compositor layer so a neighboring
+    // transform animation (the chat panel sliding in) can't re-raster/drag its
+    // paint. Computed transform stays `none`, so Mapbox pointer/marker math is
+    // unaffected (a real translate would offset its getBoundingClientRect).
+    <div className="absolute inset-0" style={{ willChange: "transform" }}>
       <div
         ref={containerRef}
         className={`h-full w-full bg-surface-2 ${canConnect ? "" : "pulse-map-locked"}`}

@@ -99,9 +99,19 @@ with a persisted toggle. Setup (user): `npm install motion`.
   `AnimatePresence`); full-bleed remote with floating overlays (controls can't be pushed
   off-screen — structural hardening of the 1.5 fix); **mirrored** self-view PiP; peer identity
   pill (hue dot + intro, matches chat/cards); spinner + name waiting state; "End video" via the
-  danger `Button` over a scrim. (Functional controls — mute mic, stop camera, leave-call,
-  chat-during-video — are new capability → moved to **4.2**.)
-- [ ] 2.7 Responsive + a11y pass (reduced-motion, focus-visible)
+  danger `Button` over a scrim. Remote feed shows at **true aspect ratio** (`object-contain`,
+  letterboxed — a portrait phone caller isn't cropped); self PiP stays square cover. **Chat during
+  video** (display only — the data channel is already open): a Chat toggle by End video shows the
+  chat; desktop shrinks the video (`md:right-[28rem]`) with chat beside it, mobile shows chat
+  full-screen (header "Video" returns). Call surface portaled to `<body>` so the chat slide can't
+  drag the map. (Functional controls — mute mic, stop camera, leave-call — are new capability →
+  **4.2**.)
+- [x] **2.7 Responsive + a11y pass** — focus-visible everywhere (chat Video/End/Send migrated to
+  the shared `Button`; ring on `ThemeToggle`); `Modal` is a proper `role="dialog"` + `aria-modal`
+  with Escape-to-close and focus return; `Toast` is a live region (assertive for danger, polite
+  otherwise); aria-labels on the chat input + both videos; mobile — the theme toggle hides under
+  full-screen overlays (`html.pulse-overlay` + `max-width:639px`), gate padding eases at ~375px.
+  (Reduced-motion already handled per-component + the `prefers-reduced-motion` CSS block.)
 
 ## Phase 3 — Make it secure — *sketch*
 
@@ -121,9 +131,10 @@ Feature: **"Introduce yourself"** (moved here from Phase 2 — this is the grade
   `join(id,lat,lng,intro)` (trim/cap/validate in `/api/join`) → `poll` returns it →
   `PeerDot.intro`. Shown on **peer-pin hover** **and** in the incoming-connect prompt
   (mobile/touch + pre-accept safety context). Setup: `npx prisma db push`.
-- [ ] 4.2 Video call controls (moved from 2.6) — **mute mic** + **stop camera** (toggle
-  `track.enabled`), **leave call** (vs end-video), **chat during video**. New capability on top of
-  the existing video feature.
+- [ ] 4.2 Video call controls (moved from 2.6) — **mute mic** (toggle audio `track.enabled`),
+  **leave call** (vs end-video). New capability on top of the existing video feature.
+  (Chat-during-video display landed in 2.6 — UI only, the data channel is already open.
+  Stop-camera dropped — End video covers it.)
 - [ ] 4.3 Optional extensions (TBD) — richer hover card, edit intro while live, and/or a
   lightweight **safety** affordance (block/disconnect); possible add: connection **ripples**.
 

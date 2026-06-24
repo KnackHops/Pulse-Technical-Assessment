@@ -1,19 +1,41 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 // Centered modal with an animated backdrop + card. Kept mounted and driven by
-// `open` so AnimatePresence can play the exit animation on close.
+// `open` so AnimatePresence can play the exit animation on close. Accessible:
+// role=dialog + aria-modal, Escape closes, focus moves in on open and returns to
+// the previously focused element on close.
 export default function Modal({
   open,
   onClose,
+  label,
   children,
 }: {
   open: boolean;
   onClose?: () => void;
+  label?: string;
   children: ReactNode;
 }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const lastFocused = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    lastFocused.current = document.activeElement as HTMLElement | null;
+    cardRef.current?.focus();
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose?.();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      lastFocused.current?.focus?.();
+    };
+  }, [open, onClose]);
+
   return (
     <AnimatePresence>
       {open && (
@@ -25,7 +47,12 @@ export default function Modal({
           onClick={onClose}
         >
           <motion.div
-            className="w-full max-w-xs rounded-2xl bg-surface p-6 text-center text-foreground shadow-xl"
+            ref={cardRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={label}
+            tabIndex={-1}
+            className="w-full max-w-xs rounded-2xl bg-surface p-6 text-center text-foreground shadow-xl outline-none"
             initial={{ opacity: 0, scale: 0.95, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 8 }}
