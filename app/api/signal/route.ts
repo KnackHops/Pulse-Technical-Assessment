@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import type { SignalType } from "@/lib/types";
 import { readSession } from "@/lib/session";
+import { rateLimit, tooManyRequests } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,6 +43,9 @@ export async function POST(request: NextRequest) {
   if (readSession(request) !== fromId) {
     return Response.json({ error: "forbidden" }, { status: 403 });
   }
+  // ICE can burst during setup, so allow a higher rate than join.
+  const rl = rateLimit(`signal:${fromId}`, 60, 10_000);
+  if (!rl.ok) return tooManyRequests(rl.retryAfter);
   if (typeof type !== "string" || !VALID_TYPES.includes(type as SignalType)) {
     return Response.json({ error: "invalid type" }, { status: 400 });
   }

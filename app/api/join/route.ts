@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { applyPrivacyOffset, isValidLatLng } from "@/lib/geo";
 import { MAX_INTRO_LEN } from "@/lib/types";
 import { SESSION_COOKIE, signSession, cookieOptions } from "@/lib/session";
+import { rateLimit, tooManyRequests, clientIp } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,6 +21,10 @@ function sanitizeIntro(value: unknown): string | null {
 // Applies a 1–3 km privacy offset and upserts the presence row. Raw
 // coordinates are never stored; the intro is optional + ephemeral.
 export async function POST(request: NextRequest) {
+  // No session yet → key by IP. Re-join/refresh is rare, so keep it tight.
+  const rl = rateLimit(`join:${clientIp(request)}`, 5, 60_000);
+  if (!rl.ok) return tooManyRequests(rl.retryAfter);
+
   let body: unknown;
   try {
     body = await request.json();

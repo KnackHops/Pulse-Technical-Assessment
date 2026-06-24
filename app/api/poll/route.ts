@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { STALE_MS, SIGNAL_TTL_MS } from "@/lib/presence";
 import type { PollResponse } from "@/lib/types";
 import { readSession } from "@/lib/session";
+import { rateLimit, tooManyRequests } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,6 +22,9 @@ export async function GET(request: NextRequest) {
   if (readSession(request) !== id) {
     return Response.json({ error: "forbidden" }, { status: 403 });
   }
+  // Generous — this is the ~1.5s live-map loop.
+  const rl = rateLimit(`poll:${id}`, 30, 10_000);
+  if (!rl.ok) return tooManyRequests(rl.retryAfter);
 
   const now = Date.now();
   const staleCutoff = new Date(now - STALE_MS);

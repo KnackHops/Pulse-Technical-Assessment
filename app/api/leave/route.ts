@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { readSession } from "@/lib/session";
+import { rateLimit, tooManyRequests } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,6 +26,8 @@ export async function POST(request: NextRequest) {
   if (readSession(request) !== id) {
     return Response.json({ error: "forbidden" }, { status: 403 });
   }
+  const rl = rateLimit(`leave:${id}`, 10, 60_000);
+  if (!rl.ok) return tooManyRequests(rl.retryAfter);
 
   // If this user was in a call, free their partner (clear busy + pairing) —
   // otherwise the partner stays "busy" forever after we delete this row.
