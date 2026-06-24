@@ -15,10 +15,9 @@ Also decided to deploy for video call testing.
 
 ## Phase 2 — Make it good
 
-*What I changed and the thinking behind it.*
+Aside from the various UI quick improvements for animation, theme, dark/light mode, modals, toasts and cursor pointer in buttons. 
 
-_(todo)_
-
+The part I focused the most is the gate for entering the map. I focused on making sure to tell what the web app is really about with one look instead of just texts. A globe in the back that have fake pins, and the pulsating grid + panel. I also introduced introduction here which touches on phase 4 as well, I'll say my reason for that in phase 4.
 ---
 
 ## Phase 3 — Make it secure
