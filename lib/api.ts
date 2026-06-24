@@ -18,6 +18,19 @@ export async function join(
   if (!res.ok) throw new Error(`join failed: ${res.status}`);
 }
 
+// Public online count for the entry gate (no session yet, so it can't use the
+// authed poll). Returns 0 on any error — the gate count is non-critical.
+export async function onlineCount(): Promise<number> {
+  try {
+    const res = await fetch("/api/online", { cache: "no-store" });
+    if (!res.ok) return 0;
+    const data = (await res.json()) as { count: number };
+    return data.count;
+  } catch {
+    return 0;
+  }
+}
+
 export async function poll(id: string): Promise<PollResponse> {
   const res = await fetch(`/api/poll?id=${encodeURIComponent(id)}`, {
     cache: "no-store",

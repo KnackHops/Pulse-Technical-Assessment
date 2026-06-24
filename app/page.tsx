@@ -10,7 +10,7 @@ import RequestingCard from "./components/RequestingCard";
 import ChatPanel, { type ChatMessage } from "./components/ChatPanel";
 import VideoPanel from "./components/VideoPanel";
 import Portal from "./components/ui/Portal";
-import { join, leave, poll, sendSignal } from "@/lib/api";
+import { join, leave, poll, sendSignal, onlineCount } from "@/lib/api";
 import { PeerSession, type DescType, type PeerControl } from "@/lib/webrtc";
 import { POLL_INTERVAL_MS } from "@/lib/presence";
 import { type PeerDot, type SignalMsg } from "@/lib/types";
@@ -369,18 +369,16 @@ export default function Home() {
     };
   }, [sessionId, phase]);
 
-  // Live online count while on the gate. poll() only reads/heartbeats (no
-  // upsert), so calling it here does NOT create a presence row — the user
-  // doesn't appear on the map until they actually join.
+  // Live online count while on the gate. Uses the public /api/online endpoint
+  // (a bare count, no session) rather than the authed poll — the user hasn't
+  // joined yet, so there's no session cookie and no presence row is created.
   useEffect(() => {
     if (phase !== "gate") return;
     let active = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const tick = async () => {
-      try {
-        const data = await poll(sessionId);
-        if (active) setGateCount(data.peers.length);
-      } catch {}
+      const count = await onlineCount();
+      if (active) setGateCount(count);
       if (active) timer = setTimeout(tick, POLL_INTERVAL_MS);
     };
     tick();
