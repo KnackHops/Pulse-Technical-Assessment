@@ -22,10 +22,7 @@ The part I focused the most is the gate for entering the map. I focused on makin
 
 ## Phase 3 — Make it secure
 
-*Issues found, how I ranked them, what I fixed.*
-
-_(todo)_
-
+Secured Cookie and security headers for requests pretty standard. Rate limiting + cap mailbox to avoid flooding. Input hardening for extra checking of id.
 ---
 
 ## Phase 4 — Make it better

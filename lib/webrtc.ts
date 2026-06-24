@@ -19,22 +19,32 @@ interface PeerCallbacks {
 // STUN discovers each peer's public address (good enough on friendly NATs).
 // TURN relays the media when a direct path can't be punched — needed for peers
 // on different networks or behind symmetric NAT (otherwise ICE finds no working
-// candidate pair → "Connection failed"). Open Relay is a free public TURN; fine
-// for a demo, swap for Twilio / self-hosted coturn in production.
-const ICE_CONFIG: RTCConfiguration = {
-  iceServers: [
+// candidate pair → "Connection failed").
+//
+// TURN creds come from NEXT_PUBLIC_TURN_* env (e.g. a free Metered key) so they
+// can be set per-deploy without a code change. TURN creds are client-visible by
+// design (the browser needs them to reach the relay). NEXT_PUBLIC_TURN_URL may
+// be a comma-separated list of urls (e.g. the :80, :443, :443?transport=tcp
+// variants). If unset, we fall back to STUN only — same-network peers connect,
+// cross-NAT peers may not.
+function buildIceServers(): RTCIceServer[] {
+  const servers: RTCIceServer[] = [
     { urls: "stun:stun.l.google.com:19302" },
-    {
-      urls: [
-        "turn:openrelay.metered.ca:80",
-        "turn:openrelay.metered.ca:443",
-        "turn:openrelay.metered.ca:443?transport=tcp",
-      ],
-      username: "openrelayproject",
-      credential: "openrelayproject",
-    },
-  ],
-};
+  ];
+  const turnUrl = process.env.NEXT_PUBLIC_TURN_URL;
+  const turnUser = process.env.NEXT_PUBLIC_TURN_USERNAME;
+  const turnCred = process.env.NEXT_PUBLIC_TURN_CREDENTIAL;
+  if (turnUrl && turnUser && turnCred) {
+    servers.push({
+      urls: turnUrl.split(",").map((u) => u.trim()),
+      username: turnUser,
+      credential: turnCred,
+    });
+  }
+  return servers;
+}
+
+const ICE_CONFIG: RTCConfiguration = { iceServers: buildIceServers() };
 
 export class PeerSession {
   private pc: RTCPeerConnection;
