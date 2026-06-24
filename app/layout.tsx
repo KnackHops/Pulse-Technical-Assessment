@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Script from "next/script";
+import { headers } from "next/headers";
 import "./globals.css";
 import { ThemeProvider } from "./components/ThemeProvider";
 import ThemeToggle from "./components/ThemeToggle";
@@ -24,11 +24,14 @@ export const metadata: Metadata = {
   description: "A living globe of anonymous strangers. Tap a dot, start talking.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // CSP nonce from middleware — lets the no-flash inline script run under the
+  // strict script-src.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
     <html
       lang="en"
@@ -36,9 +39,10 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <Script id="pulse-theme" strategy="beforeInteractive">
-          {themeScript}
-        </Script>
+        <script
+          nonce={nonce}
+          dangerouslySetInnerHTML={{ __html: themeScript }}
+        />
         <ThemeProvider>
           <ThemeToggle />
           {children}
