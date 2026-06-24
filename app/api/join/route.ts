@@ -1,7 +1,8 @@
-import type { NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { applyPrivacyOffset, isValidLatLng } from "@/lib/geo";
 import { MAX_INTRO_LEN } from "@/lib/types";
+import { SESSION_COOKIE, signSession, cookieOptions } from "@/lib/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -56,5 +57,9 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  return Response.json({ ok: true });
+  // Bind this id to the client: a signed, httpOnly session cookie. The other
+  // routes verify it, so only the client that joined as `id` can act as `id`.
+  const res = NextResponse.json({ ok: true });
+  res.cookies.set(SESSION_COOKIE, signSession(id), cookieOptions);
+  return res;
 }

@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import type { SignalType } from "@/lib/types";
+import { readSession } from "@/lib/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,6 +36,11 @@ export async function POST(request: NextRequest) {
 
   if (typeof fromId !== "string" || typeof toId !== "string") {
     return Response.json({ error: "invalid ids" }, { status: 400 });
+  }
+  // The sender must be who they claim — kills spoofed offers/answers (MITM).
+  // `toId` stays free: you may signal anyone.
+  if (readSession(request) !== fromId) {
+    return Response.json({ error: "forbidden" }, { status: 403 });
   }
   if (typeof type !== "string" || !VALID_TYPES.includes(type as SignalType)) {
     return Response.json({ error: "invalid type" }, { status: 400 });

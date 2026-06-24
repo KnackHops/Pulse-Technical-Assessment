@@ -113,13 +113,33 @@ with a persisted toggle. Setup (user): `npm install motion`.
   full-screen overlays (`html.pulse-overlay` + `max-width:639px`), gate padding eases at ~375px.
   (Reduced-motion already handled per-component + the `prefers-reduced-motion` CSS block.)
 
-## Phase 3 — Make it secure — *sketch*
+## Phase 3 — Make it secure
 
-- [ ] 3.1 (P0) Identity binding — signed httpOnly cookie bound to session id; verify on
-  poll/signal/leave (stops impersonation + mailbox/SDP leak)
-- [ ] 3.2 (P0) Rate limiting on all routes
-- [ ] 3.3 (P1) Input hardening — reject `fromId === toId`, validate payload shape, cap peers
-- [ ] 3.4 (P2) Security headers / CORS / error hygiene
+The API trusts a **client-supplied `id`** (`crypto.randomUUID()` in `page.tsx`) with no auth →
+anyone who knows an id can drain its signal mailbox (`poll`), spoof `fromId` (`signal`), or
+delete its row (`leave`). The fix is a per-session secret that proves "the client acting as id X
+created id X" — **not** a login, no PII, dies with the tab (preserves the anonymous/ephemeral
+model). Each sub-phase = one commit; the "why" is explained before each.
+
+> **Chat is already end-to-end encrypted** — it rides a WebRTC data channel (SCTP-over-DTLS,
+> DTLS is mandatory in WebRTC). Message content never touches the server (peer-to-peer once
+> connected); the SDP mailbox carries only certificate fingerprints, not keys. So no app-layer
+> encryption is needed — **3.1 closes the only real chat threat (signaling MITM)** by binding
+> `fromId`. A *visible* "verify"/safety-number feature is parked in 4.3.
+
+- [ ] 3.1 (P0) **Identity binding** — **signed (HMAC) httpOnly session cookie** bound to the
+  session id. `lib/session.ts` (`signSession`/`readSession`, `SESSION_SECRET` env); `join` sets
+  it, `poll`/`signal`/`leave` verify (`403` on mismatch). **No DB migration** (signed cookie,
+  no column) — only a `SESSION_SECRET` env var (user setup). Session cookie (no expiry) → gone
+  on tab close, same lifetime as the `sessionStorage` theme/intro.
+- [ ] 3.2 (P0) **Rate limiting** — in-memory fixed-window limiter (`lib/rateLimit.ts`) keyed by
+  session id (IP fallback for `join`); `429` + `Retry-After`. Note: per-lambda on Vercel =
+  best-effort; Upstash Redis is the prod swap (infra, out of code scope).
+- [ ] 3.3 (P1) **Input hardening** — reject `fromId === toId`; validate id shape (UUID) on every
+  route; cap pending signals per `toId` (mailbox flood); keep type whitelist + 64 KB payload cap.
+- [ ] 3.4 (P2) **Security headers / CORS / error hygiene** — `middleware.ts`: CSP (Mapbox-aware +
+  hash the inline theme script), `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`,
+  HSTS (prod); same-origin `Origin` check on API; generic error bodies (no stack/Prisma leak).
 
 ## Phase 4 — Make it better (new feature)
 
@@ -136,7 +156,9 @@ Feature: **"Introduce yourself"** (moved here from Phase 2 — this is the grade
   (Chat-during-video display landed in 2.6 — UI only, the data channel is already open.
   Stop-camera dropped — End video covers it.)
 - [ ] 4.3 Optional extensions (TBD) — richer hover card, edit intro while live, and/or a
-  lightweight **safety** affordance (block/disconnect); possible add: connection **ripples**.
+  lightweight **safety** affordance (block/disconnect); possible add: connection **ripples**;
+  **safety-number / DTLS-fingerprint "verify"** display (visible MITM check — chat is already
+  E2E via DTLS, this just surfaces it; see Phase 3 note).
 
 ---
 

@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { readSession } from "@/lib/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +19,11 @@ export async function POST(request: NextRequest) {
 
   if (typeof id !== "string" || !id) {
     return Response.json({ error: "invalid id" }, { status: 400 });
+  }
+  // Only the owner can tear down their own row (sendBeacon sends the cookie
+  // same-origin on tab close, so the unload path still works).
+  if (readSession(request) !== id) {
+    return Response.json({ error: "forbidden" }, { status: 403 });
   }
 
   // If this user was in a call, free their partner (clear busy + pairing) —
