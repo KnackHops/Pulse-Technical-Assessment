@@ -27,6 +27,6 @@ Secured Cookie and security headers for requests pretty standard. Rate limiting 
 
 ## Phase 4 — Make it better
 
-*What I built, why, and what I'd do next with more time.*
+Introduction. Personalizes each entry a little bit, instead of just random dots you click to. Limited to 60 characters to challenge users to be even more creative. Who doesn't want personality in their app? We want to make them feel unique. It also only stays per session, as to not completely step over the ethos of nothing stays and every session is new.
 
-_(todo)_
+If I get more, some sort of avatar that gets randomed every entry I think would be fun. Where certain avatar can be considered rare, or one can only exist at a time. Group call, which kinda breaks the ethos of the app but I think it would be fun. random events that requires users to join and work towards a goal via a mini game that pops up randomly.
